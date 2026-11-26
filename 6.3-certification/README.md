@@ -20,7 +20,7 @@ python3 -m unittest discover -s 6.3-certification -p "test_*.py"
 ## Preparing Datasets
 
 ```sh
-python3 6.3-certification/prepare_adult.py --download --raw data/adult/raw --out data/adult/full-records
+python3 6.3-certification/prepare_adult.py --download --raw-dir data/adult/raw --out data/adult/full-records
 ```
 
 ## Running Benchmarks
@@ -37,20 +37,20 @@ python3 6.3-certification/run_admission_pilot.py --config configs/admission-clie
 python3 6.3-certification/run_admission_pilot.py --config configs/admission-sampling-scaling-formal.json --out tmp/b2-run
 ```
 
-## Offline Re-Verification and Plotting (Figure 3)
+## Validation and Plotting (Figure 3)
 
-Given extracted raw evidence directories from the Release/Zenodo archive:
+Validate and plot completed benchmark output directories (for example, `tmp/b1-run`, `tmp/b1-b3-run`, and `tmp/b2-run` produced above; requires `matplotlib`):
 
 ```sh
-python3 6.3-certification/commitment_length.py validate --out <path/to/commitment-length-20261113>
-python3 6.3-certification/validate_admission_run.py <path/to/admission-certification-20261030>
-python3 6.3-certification/validate_admission_run.py <path/to/admission-sampling-scaling-20261113>
+python3 6.3-certification/commitment_length.py validate --out tmp/b1-run
+python3 6.3-certification/validate_admission_run.py tmp/b1-b3-run
+python3 6.3-certification/validate_admission_run.py tmp/b2-run
 
 python3 6.3-certification/plot_certification.py \
-  --offchain <path/to/admission-certification-20261030> \
-  --sampling <path/to/admission-sampling-scaling-20261113> \
-  --construction <path/to/commitment-length-20261113> \
+  --offchain tmp/b1-b3-run \
+  --sampling tmp/b2-run \
+  --construction tmp/b1-run \
   --out tmp/fig3-output
 ```
 
-Use `--preview` with `plot_certification.py` when rendering non-formal local smoke runs.
+Use `--preview` with `plot_certification.py` when rendering non-formal local smoke runs. Published summary values are recorded in `results/paper-snapshots/6.3-certification/`.

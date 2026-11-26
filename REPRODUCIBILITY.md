@@ -49,14 +49,14 @@ Protocol domain-separation identifiers (e.g., `WORK2_RECEIPT_V1`, `WORK2_RESULT_
 
 ## 4. Mapping to Paper Figures and Tables
 
-| Paper Artifact | Experimental Module | Archived Raw Batch (Companion Release / Zenodo) | Summary Snapshot in Repo |
-|---|---|---|---|
-| Figure 3(a) & 3(b), Section 6.3 reuse metrics | [6.3-certification/](6.3-certification/README.md) | `commitment-length-20261113`, `admission-sampling-scaling-20261113`, `admission-certification-20261030` | `results/paper-snapshots/6.3-certification/` |
-| Table III (C1) & Figure 4 (C2) | [6.4-execution/](6.4-execution/README.md) | `execution-final-20261031` | `results/paper-snapshots/6.4-execution/paper-summary.json` |
-| Table IV (D1) & Figure 5 (D2) | [6.5-chain/](6.5-chain/README.md) | `osaka-gas-20261103`, `gas-price-20261103` | `results/paper-snapshots/6.5-chain/` |
-| Table V (E1 common-`exp` comparison) | [6.6-comparison/](6.6-comparison/README.md) | `svm-common-exp-scaling-20261121` (5k, 10k) + `svm-threeway-exp-20261115` (32,561) | `results/paper-snapshots/6.6-comparison/paper-values.json` |
+| Paper Artifact | Experimental Module | Summary Snapshot in Repo |
+|---|---|---|
+| Figure 3(a) & 3(b), Section 6.3 reuse metrics | [6.3-certification/](6.3-certification/README.md) | `results/paper-snapshots/6.3-certification/` |
+| Table III (C1) & Figure 4 (C2) | [6.4-execution/](6.4-execution/README.md) | `results/paper-snapshots/6.4-execution/paper-summary.json` |
+| Table IV (D1) & Figure 5 (D2) | [6.5-chain/](6.5-chain/README.md) | `results/paper-snapshots/6.5-chain/` |
+| Table V (E1 common-`exp` comparison) | [6.6-comparison/](6.6-comparison/README.md) | `results/paper-snapshots/6.6-comparison/paper-values.json` |
 
 ## 5. Verification Scope (Local Native vs. SGX Hardware)
 
-- **Locally verifiable without SGX:** Solidity contract tests (`forge test`), Go unit & Anvil integration tests (`bash prototype/test.sh`), native end-to-end two-trade demo (`python3 prototype/demo.py`), Python unit tests (`6.3-certification/` and `6.4-execution/`), Section 6.3 off-chain benchmarks, Section 6.5 local Osaka gas runs, and offline verification/plotting scripts (plotting requires `matplotlib`) once the companion raw evidence archive is downloaded.
+- **Locally verifiable without SGX:** Solidity contract tests (`forge test`), Go unit & Anvil integration tests (`bash prototype/test.sh`), native end-to-end two-trade demo (`python3 prototype/demo.py`), Python unit tests (`6.3-certification/` and `6.4-execution/`), Section 6.3 off-chain benchmarks and plotting (requires `matplotlib`), and Section 6.5 local gas benchmarks.
 - **Requires Linux Intel SGX hardware:** EGo `1.9.0` enclave signing and DCAP attestation (`prototype/build.py sgx`, `prototype/sgx_smoke.sh`), Section 6.4 SGX runs, and Section 6.6 three-way SGX runs. Native tests confirm functional and offline verification correctness, not SGX hardware performance.

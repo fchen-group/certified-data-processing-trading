@@ -16,18 +16,18 @@ The full 256-transaction trade-gas CLI and tamper-rejection checks are exercised
 go test -v -race -tags integration -run TestTradeGas ./integration/...
 ```
 
-## Offline Re-Verification and Plotting (Table IV & Figure 5)
+## Receipt Auditing and Plotting (Table IV & Figure 5)
 
-Given the extracted `osaka-gas-20261103` raw archive:
+Given a completed `tradegasbench` run directory:
 
 ```sh
-# Audit all 256 receipts and verify Geth independent replay manifest
-python3 6.5-chain/summarize_trade_gas.py <path/to/osaka-gas-20261103>/trade
+# Audit all 256 receipts (and Osaka independent-replay manifest when present)
+python3 6.5-chain/summarize_trade_gas.py <path/to/trade-run-dir>
 
-# Render Figure 5 (Result delivery cost)
+# Render Figure 5 (Trade gas cost versus result size)
 python3 6.5-chain/plot_trade_gas.py \
-  --run <path/to/osaka-gas-20261103>/trade \
+  --run <path/to/trade-run-dir> \
   --out tmp/fig5-output
 ```
 
-Published summary values and the Etherscan gas/ETH price window (2025-11-01 to 2026-10-31) are also available in `results/paper-snapshots/6.5-chain/`.
+Published summary values and the Etherscan gas/ETH price window (2025-11-01 to 2026-10-31) are recorded in `results/paper-snapshots/6.5-chain/`.

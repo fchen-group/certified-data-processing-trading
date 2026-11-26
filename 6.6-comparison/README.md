@@ -34,22 +34,22 @@ For rebuilding third-party SGX toolchains on Linux x86_64:
 
 > Note: This repository preserves the formal common-`exp` sources, patches, and container build references for auditability, together with standalone offline verifiers for the archived hardware runs; it does not provide a single-command end-to-end rebuild orchestrator across all three SGX toolchains.
 
-## Offline Verification of Table V
+## Verification of Table V Results
 
-Given the two extracted raw evidence batches (`svm-common-exp-scaling-20261121` and `svm-threeway-exp-20261115`) from the companion Release/Zenodo archive:
+Given completed common-`exp` hardware measurement batches (the `N = 5,000` / `10,000` batch and the `N = 32,561` batch):
 
 ```sh
 # 1. Independently verify all 72 raw observations at N=5,000 and 10,000 (builds 6.6-comparison/verify automatically)
 python3 6.6-comparison/common_exp_scaling.py analyze \
-  <path/to/svm-common-exp-scaling-20261121> \
+  <path/to/scaling-batch-dir> \
   --impl . \
-  --prior <path/to/svm-threeway-exp-20261115>
+  --prior <path/to/full-batch-dir>
 
 # 2. Check cross-batch binary/environment parity and combine with the verified 32,561 analysis.json to derive Table V
 python3 6.6-comparison/derive_paper_values.py \
-  --supplement <path/to/svm-common-exp-scaling-20261121> \
-  --prior <path/to/svm-threeway-exp-20261115> \
+  --supplement <path/to/scaling-batch-dir> \
+  --prior <path/to/full-batch-dir> \
   --out tmp/table5-paper-values.json
 ```
 
-> Run without Python `-O` optimization; both scripts enforce assertions to guarantee complete validation.
+> Run without Python `-O` optimization; both scripts enforce assertions to guarantee complete validation. Published Table V values are recorded in `results/paper-snapshots/6.6-comparison/paper-values.json`.

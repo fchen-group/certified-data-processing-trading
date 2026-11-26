@@ -36,17 +36,17 @@ python3 6.4-execution/run_execution.py \
   --out tmp/execution-run
 ```
 
-For formal runs (`stage: "formal"`), `run_execution.py` requires an operator-recorded `acceptance.json` binding the exact build (`validated: true`, `source_hash`, `mrenclave`, `benchmark_sha256`, `protocol_evidence`, and `diagnostic_evidence`) after end-to-end SGX protocol validation. C1 initialization and remote-attestation timings are collected via `prototype/client -timings` against fresh `enclave` instances; the archived C1 driver and raw logs are included in the companion raw evidence archive.
+For formal runs (`stage: "formal"`), `run_execution.py` requires an operator-recorded `acceptance.json` binding the exact build (`validated: true`, `source_hash`, `mrenclave`, `benchmark_sha256`, `protocol_evidence`, and `diagnostic_evidence`) after end-to-end SGX protocol validation. C1 initialization and remote-attestation timings are collected via `prototype/client -timings` against fresh `enclave` instances.
 
-## Offline Verification and Plotting (Table III & Figure 4)
+## Validation and Plotting (Table III & Figure 4)
 
-Given the extracted `execution-final-20261031` raw archive:
+Given a completed formal C1/C2 result directory containing `SHA256SUMS`, `sgx-evidence.tar.gz`, and `c1-verification.json`:
 
 ```sh
 python3 6.4-execution/plot_execution.py \
-  --results <path/to/execution-final-20261031> \
+  --results <path/to/formal-result-dir> \
   --figure tmp/fig4/execution_performance.pdf \
   --summary tmp/fig4/paper-summary.json
 ```
 
-This checks all archived `SHA256SUMS`, recomputes all 600 C2 observations directly from the archived raw observation log, checks the 30 C1 run records and means in `c1-verification.json`, and writes Figure 4 and `paper-summary.json`.
+This checks all `SHA256SUMS`, recomputes all 600 C2 observations directly from the observation log, checks the 30 C1 run records and means in `c1-verification.json`, and writes Figure 4 and `paper-summary.json`. Published summary values are recorded in `results/paper-snapshots/6.4-execution/paper-summary.json`.

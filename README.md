@@ -60,11 +60,11 @@ The lightweight `data/adult/classification/` and `data/trade-gas/` fixtures are 
 | Section 6.5 | On-chain gas costs (Osaka rules) and result-size delivery scaling | [6.5-chain/README.md](6.5-chain/README.md) |
 | Section 6.6 | Controlled common-`exp` SVM comparison with PrivacyGuard and VDDPI | [6.6-comparison/README.md](6.6-comparison/README.md) |
 
-## Paper Summary Snapshots & Artifact Archive
+## Paper Summary Snapshots
 
-Lightweight summary files under [results/paper-snapshots/](results/paper-snapshots/README.md) allow direct inspection of the published table and figure values. Full raw measurement archives (observation logs, transaction receipts, and SGX hardware evidence required to re-verify raw observations and regenerate publication figures) are excluded from Git due to size and will be published via a companion GitHub Release / Zenodo archive alongside the paper (archive URL, SHA-256 checksums, and directory layout will be linked here upon release).
+Lightweight summary files under [results/paper-snapshots/](results/paper-snapshots/README.md) record the published table and figure values directly in this repository. Large raw execution logs, transaction receipt dumps, and SGX hardware evidence bundles are not stored in Git; the scripts in each section run the benchmarks and validate or plot the generated output directories.
 
-> **Verification scope:** `prototype/test.sh` verifies the smart contract (Foundry) and Go unit/integration tests; Python unit tests, offline archive verification, and figure regeneration are run via the per-section commands linked above. Formal Intel SGX timings (Sections 6.4 and 6.6) were recorded on an Intel Xeon SGX host using the pinned EGo 1.9.0, Intel SGX SDK 2.27, and Gramine 1.9 toolchains described in [REPRODUCIBILITY.md](REPRODUCIBILITY.md).
+> **Verification scope:** `prototype/test.sh` verifies the smart contract (Foundry) and Go unit/integration tests; Python unit tests, benchmark runs, and result validation/plotting are executed via the per-section commands linked above. Formal Intel SGX timings (Sections 6.4 and 6.6) were recorded on an Intel Xeon SGX host using the pinned EGo 1.9.0, Intel SGX SDK 2.27, and Gramine 1.9 toolchains described in [REPRODUCIBILITY.md](REPRODUCIBILITY.md).
 
 ## License
 
