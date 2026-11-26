@@ -1,4 +1,4 @@
-// Unified CLI client shared by the Data Owner (DO), Data Buyer (DB), and Review Authority (RA).
+// Unified CLI client shared by the Data Owner (DO), Data Buyer (DB), and Registration Authority (RA).
 package main
 
 import (

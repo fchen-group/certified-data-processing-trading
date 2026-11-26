@@ -2,7 +2,7 @@
 
 In the data-processing-as-a-service paradigm, a data buyer purchases the output of an agreed analysis program executed over a data owner's private dataset rather than the raw data itself. Existing TEE- and blockchain-based schemes leave two key gaps: repeated data auditing creates redundant overhead and unnecessary sample disclosure across trades, and settlement paths can decouple on-chain payment from guaranteed delivery of results computed over the certified dataset version.
 
-This repository implements a blockchain- and Intel SGX-based certified data-processing trading protocol. A data owner binds individual records, their ordering, and independent random salts into a compact Merkle dataset commitment, which a review authority certifies via sampling so the certificate can be reused across subsequent trades. During each trade, an attested enclave reconstructs the actual input commitment, runs the agreed analysis over authenticated encrypted inputs, and returns a signed execution receipt with an encrypted result; the trading smart contract verifies the receipt, publishes the complete result ciphertext on chain, and credits payment atomically.
+This repository implements a blockchain- and Intel SGX-based certified data-processing trading protocol. A data owner binds individual records, their ordering, and independent random salts into a compact Merkle dataset commitment, which a registration authority certifies via sampling so the certificate can be reused across subsequent trades. During each trade, an attested enclave reconstructs the actual input commitment, runs the agreed analysis over authenticated encrypted inputs, and returns a signed execution receipt with an encrypted result; the trading settlement contract verifies the receipt, publishes the complete result ciphertext on chain, and credits payment atomically.
 
 ## System Model
 
@@ -17,7 +17,7 @@ The system involves the following entities:
 
 - **Data Owner (DO):** constructs the salted Merkle commitment for a dataset version, answers sampling audit challenges, registers trades referencing an active certificate, delivers the encrypted dataset over an authenticated channel, and submits the signed execution receipt for on-chain settlement.
 - **Data Buyer (DB):** verifies trade terms and deposits funds on chain, verifies the enclave attestation report and binds the receipt verification key on chain, submits confidential analysis parameters and a result encryption key to the enclave, and decrypts the settled result published by the contract.
-- **Review Authority (RA):** registers audit applications, issues on-chain sampling challenges within a per-batch challenge budget, verifies sample membership proofs and business compliance, and issues reusable on-chain dataset certificates.
+- **Registration Authority (RA):** registers audit applications, issues on-chain sampling challenges within a per-batch challenge budget, verifies sample membership proofs and business compliance, and issues reusable on-chain dataset certificates.
 - **Trading Settlement Contract (TSC):** manages dataset audit states, reusable certificates, trade lifecycles, escrowed funds, dual-party receipt key confirmation, atomic encrypted result delivery with owner credit settlement, separate withdrawal, and timeout refunds.
 - **Compute Host & Intel SGX Enclave:** executes the agreed program inside a hardware enclave; the host is untrusted and cannot forge receipts or substitute uncertified inputs. Once settled on chain, result recovery by the buyer no longer depends on host cooperation.
 
