@@ -1,0 +1,12 @@
+{
+  "source": "UCI Adult official adult.data",
+  "source_sha256": "5b00264637dbfec36bdeaab5676b0b309ff9eb788d63554ca0a249491c86603d",
+  "count": 32561,
+  "shuffle_seed": 20261104,
+  "missing_records_dropped": false,
+  "nested_subsets": {
+    "5000": "bfc7d5b2c554fd9ec192c2236dce03ded904037641b290b04c90eb6c750e547a",
+    "10000": "a8a0a309468ccca465dabd686c496943daeae5de490bdd93eebdf50a89af078b",
+    "32561": "ff4b96c1304d7e46c9c9e33eb11681d72dbd6f60ab01e61a8b2712e9aebccfe9"
+  }
+}

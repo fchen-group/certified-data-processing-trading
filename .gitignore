@@ -5,7 +5,6 @@
 /contracts/out/
 /contracts/cache/
 /configs/runtime.json
-work2-sgx-key.pem
 signing-key.pem
 account.key
 *.local.key

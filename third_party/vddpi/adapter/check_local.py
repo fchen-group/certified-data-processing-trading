@@ -95,7 +95,9 @@ def main():
     p.add_argument("reference", type=Path)
     p.add_argument("evidence", type=Path)
     p.add_argument("--sizes", default="5000,10000,32561")
+    p.add_argument("--input-manifest", type=Path, default=Path(__file__).resolve().parent / "common/input-manifest.json")
     args = p.parse_args()
+    input_manifest = args.input_manifest.resolve()
     root, ref, evidence = args.prepared.resolve(), args.reference.resolve(), args.evidence.resolve()
     app = root / "app"
     evidence.mkdir(parents=True, exist_ok=False)
@@ -120,7 +122,7 @@ def main():
 
     # Same input hashes as the preceding two-system pilot; input selection is
     # checked outside the timer. Native cache is plaintext ONLY for this test.
-    expected_inputs = json.loads((ref.parents[2] / "results/supporting/svm-training-extension-20261104/input-manifest.json").read_text())["nested_subsets"]
+    expected_inputs = json.loads(input_manifest.read_text())["nested_subsets"]
     for n in map(int, args.sizes.split(",")):
         assert sha(b"\n".join(rows[:n]) + b"\n") == expected_inputs[str(n)], n
     observations = []
