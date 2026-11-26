@@ -62,7 +62,7 @@ The lightweight `data/adult/classification/` and `data/trade-gas/` fixtures are 
 
 ## Paper Summary Snapshots
 
-Lightweight summary files under [results/paper-snapshots/](results/paper-snapshots/README.md) record the published table and figure values directly in this repository. Large raw execution logs, transaction receipt dumps, and SGX hardware evidence bundles are not stored in Git; the scripts in each section run the benchmarks and validate or plot the generated output directories.
+Lightweight summary files under [results/paper-snapshots/](results/paper-snapshots/README.md) record the published table and figure values directly in this repository. Large raw execution logs, transaction receipt dumps, and SGX hardware evidence bundles are not stored in Git; the scripts in each section run the benchmarks and verify or plot results according to the input requirements documented in each section's README.
 
 > **Verification scope:** `prototype/test.sh` verifies the smart contract (Foundry) and Go unit/integration tests; Python unit tests, benchmark runs, and result validation/plotting are executed via the per-section commands linked above. Formal Intel SGX timings (Sections 6.4 and 6.6) were recorded on an Intel Xeon SGX host using the pinned EGo 1.9.0, Intel SGX SDK 2.27, and Gramine 1.9 toolchains described in [REPRODUCIBILITY.md](REPRODUCIBILITY.md).
 

@@ -38,15 +38,15 @@ python3 6.4-execution/run_execution.py \
 
 For formal runs (`stage: "formal"`), `run_execution.py` requires an operator-recorded `acceptance.json` binding the exact build (`validated: true`, `source_hash`, `mrenclave`, `benchmark_sha256`, `protocol_evidence`, and `diagnostic_evidence`) after end-to-end SGX protocol validation. C1 initialization and remote-attestation timings are collected via `prototype/client -timings` against fresh `enclave` instances.
 
-## Validation and Plotting (Table III & Figure 4)
+## Formal Bundle Verification and Plotting (Table III & Figure 4)
 
-Given a completed formal C1/C2 result directory containing `SHA256SUMS`, `sgx-evidence.tar.gz`, and `c1-verification.json`:
+`plot_execution.py` is a strict formal-evidence verifier and figure generator: it does not consume a bare `run_execution.py` directory directly, but instead expects a packaged formal C1+C2 evidence directory containing `SHA256SUMS`, `sgx-evidence.tar.gz`, `formal-summary.json`, `formal-independent-verification.json`, and `c1-verification.json`:
 
 ```sh
 python3 6.4-execution/plot_execution.py \
-  --results <path/to/formal-result-dir> \
+  --results <path/to/formal-evidence-dir> \
   --figure tmp/fig4/execution_performance.pdf \
   --summary tmp/fig4/paper-summary.json
 ```
 
-This checks all `SHA256SUMS`, recomputes all 600 C2 observations directly from the observation log, checks the 30 C1 run records and means in `c1-verification.json`, and writes Figure 4 and `paper-summary.json`. Published summary values are recorded in `results/paper-snapshots/6.4-execution/paper-summary.json`.
+This checks all `SHA256SUMS`, recomputes all 600 C2 observations directly from the packaged observation log, checks the 30 C1 run records and means in `c1-verification.json`, and writes Figure 4 and `paper-summary.json`. Published summary values are recorded in `results/paper-snapshots/6.4-execution/paper-summary.json`.

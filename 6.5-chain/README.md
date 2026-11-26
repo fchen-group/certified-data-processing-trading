@@ -18,15 +18,17 @@ go test -v -race -tags integration -run TestTradeGas ./integration/...
 
 ## Receipt Auditing and Plotting (Table IV & Figure 5)
 
-Given a completed `tradegasbench` run directory:
+`summarize_trade_gas.py` audits any completed `tradegasbench` run directory (`run.json` and `verification.json`):
 
 ```sh
-# Audit all 256 receipts (and Osaka independent-replay manifest when present)
 python3 6.5-chain/summarize_trade_gas.py <path/to/trade-run-dir>
+```
 
-# Render Figure 5 (Trade gas cost versus result size)
+`plot_trade_gas.py` renders Figure 5 (`Trade gas cost versus result size`) with `require_formal=True`, so it additionally requires the parent formal Osaka replay evidence manifest (`SHA256SUMS.json`, `environment.json`, `independent-replay.json`, and `summary.json`):
+
+```sh
 python3 6.5-chain/plot_trade_gas.py \
-  --run <path/to/trade-run-dir> \
+  --run <path/to/formal-osaka-dir>/trade \
   --out tmp/fig5-output
 ```
 
