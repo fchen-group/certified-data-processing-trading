@@ -4,7 +4,7 @@
  Crypto_Library_Name := sgx_tcrypto
  Standard_C_Library_Name := sgx_tstdc
  
--Enclave_Cpp_Files := isv_enclave/isv_enclave.cpp isv_enclave/enclave_utilities.cpp isv_enclave/enclave_svm.cpp isv_enclave/svm_task.cpp isv_enclave/diag_platform.cpp isv_enclave/enclave_fann.cpp isv_enclave/enclave_keccak.cpp
+-Enclave_Cpp_Files := isv_enclave/isv_enclave.cpp isv_enclave/enclave_utilities.cpp isv_enclave/enclave_svm.cpp isv_enclave/enclave_fann.cpp isv_enclave/enclave_keccak.cpp
 +Enclave_Cpp_Files := isv_enclave/isv_enclave.cpp isv_enclave/enclave_utilities.cpp isv_enclave/enclave_svm.cpp isv_enclave/svm_task.cpp isv_enclave/diag_platform.cpp isv_enclave/math_probe.cpp isv_enclave/enclave_fann.cpp isv_enclave/enclave_keccak.cpp
  Enclave_Include_Paths := -I$(SGX_SDK)/include \
      -I$(SGX_SDK)/include/tlibc \
@@ -18,133 +18,17 @@
  
  Enclave_Name := isv_enclave.so
  Signed_Enclave_Name := isv_enclave.signed.so
---- a/isv_enclave/enclave_svm.cpp
-+++ b/isv_enclave/enclave_svm.cpp
-@@ -1,3 +1,4 @@
-+extern "C" double (*work2_exp_fn)(double);
- #include <math.h>
- #include <stdio.h>
- #include <stdlib.h>
-@@ -239,7 +240,7 @@
- 	}
- 	double kernel_rbf(int i, int j) const
- 	{
--		return exp(-gamma*(x_square[i]+x_square[j]-2*dot(x[i],x[j])));
-+		return work2_exp_fn(-gamma*(x_square[i]+x_square[j]-2*dot(x[i],x[j])));
- 	}
- 	double kernel_sigmoid(int i, int j) const
- 	{
-@@ -362,7 +363,7 @@
- 				++y;
- 			}
- 
--			return exp(-param.gamma*sum);
-+			return work2_exp_fn(-param.gamma*sum);
- 		}
- 		case SIGMOID:
- 			return tanh(param.gamma*dot(x,y)+param.coef0);
-@@ -1735,9 +1736,9 @@
- 		else t[i]=loTarget;
- 		fApB = dec_values[i]*A+B;
- 		if (fApB>=0)
--			fval += t[i]*fApB + log(1+exp(-fApB));
-+			fval += t[i]*fApB + log(1+work2_exp_fn(-fApB));
- 		else
--			fval += (t[i] - 1)*fApB +log(1+exp(fApB));
-+			fval += (t[i] - 1)*fApB +log(1+work2_exp_fn(fApB));
- 	}
- 	for (iter=0;iter<max_iter;iter++)
- 	{
-@@ -1750,13 +1751,13 @@
- 			fApB = dec_values[i]*A+B;
- 			if (fApB >= 0)
- 			{
--				p=exp(-fApB)/(1.0+exp(-fApB));
--				q=1.0/(1.0+exp(-fApB));
-+				p=work2_exp_fn(-fApB)/(1.0+work2_exp_fn(-fApB));
-+				q=1.0/(1.0+work2_exp_fn(-fApB));
- 			}
- 			else
- 			{
--				p=1.0/(1.0+exp(fApB));
--				q=exp(fApB)/(1.0+exp(fApB));
-+				p=1.0/(1.0+work2_exp_fn(fApB));
-+				q=work2_exp_fn(fApB)/(1.0+work2_exp_fn(fApB));
- 			}
- 			d2=p*q;
- 			h11+=dec_values[i]*dec_values[i]*d2;
-@@ -1790,9 +1791,9 @@
- 			{
- 				fApB = dec_values[i]*newA+newB;
- 				if (fApB >= 0)
--					newf += t[i]*fApB + log(1+exp(-fApB));
-+					newf += t[i]*fApB + log(1+work2_exp_fn(-fApB));
- 				else
--					newf += (t[i] - 1)*fApB +log(1+exp(fApB));
-+					newf += (t[i] - 1)*fApB +log(1+work2_exp_fn(fApB));
- 			}
- 			// Check sufficient decrease
- 			if (newf<fval+0.0001*stepsize*gd)
-@@ -1821,9 +1822,9 @@
- 	double fApB = decision_value*A+B;
- 	// 1-p used later; avoid catastrophic cancellation
- 	if (fApB >= 0)
--		return exp(-fApB)/(1.0+exp(-fApB));
-+		return work2_exp_fn(-fApB)/(1.0+work2_exp_fn(-fApB));
- 	else
--		return 1.0/(1+exp(fApB)) ;
-+		return 1.0/(1+work2_exp_fn(fApB)) ;
- }
- 
- // Method 2 from the multiclass_prob paper by Wu, Lin, and Weng
---- a/isv_enclave/math_probe.cpp
-+++ b/isv_enclave/math_probe.cpp
-@@ -0,0 +1,20 @@
-+// Diagnostic dispatch only; both modes use the same compiled caller.
-+#include <cmath>
-+#include <cstring>
-+extern "C" double work2_probe_exp(double);
-+extern "C" {
-+double (*work2_exp_fn)(double) = exp;
-+static int selected_mode = 0;
-+int work2_math_select(int mode) {
-+    if (mode != 0 && mode != 1) return 0;
-+    selected_mode = mode;
-+    work2_exp_fn = mode ? work2_probe_exp : static_cast<double(*)(double)>(exp);
-+    return 1;
-+}
-+int work2_math_bytes(unsigned char* out) {
-+    if (!out) return -1;
-+    std::memcpy(out, reinterpret_cast<const void*>(static_cast<double(*)(double)>(exp)), 64);
-+    std::memcpy(out+64, reinterpret_cast<const void*>(work2_probe_exp), 64);
-+    return selected_mode;
-+}
-+}
---- a/isv_enclave/diag_platform.cpp
-+++ b/isv_enclave/diag_platform.cpp
-@@ -4,3 +4,8 @@
- extern "C" int work2_svm_diag_read(uint64_t*);
- extern "C" uint64_t work2_diag_now(){uint64_t n=0;if(OCALL_diag_now(&n)!=SGX_SUCCESS||!n)abort();return n;}
- sgx_status_t ECALL_svm_diagnostics(uint64_t* out){return work2_svm_diag_read(out)?SGX_SUCCESS:SGX_ERROR_UNEXPECTED;}
-+
-+extern "C" int work2_math_select(int);
-+extern "C" int work2_math_bytes(unsigned char*);
-+sgx_status_t ECALL_math_select(int mode){return work2_math_select(mode)?SGX_SUCCESS:SGX_ERROR_INVALID_PARAMETER;}
-+sgx_status_t ECALL_math_read(uint8_t* values,int* mode){if(!values||!mode)return SGX_ERROR_INVALID_PARAMETER;*mode=work2_math_bytes(values);return (*mode==0||*mode==1)?SGX_SUCCESS:SGX_ERROR_UNEXPECTED;}
---- a/isv_enclave/isv_enclave.edl
-+++ b/isv_enclave/isv_enclave.edl
-@@ -36,6 +36,8 @@
-     include "sgx_trts.h"
- 
-     trusted {
-+        public sgx_status_t ECALL_math_select(int mode);
-+        public sgx_status_t ECALL_math_read([out,count=128] uint8_t* values, [out] int* mode);
-         public sgx_status_t ECALL_svm_diagnostics([out,count=6] uint64_t* values);
-         public sgx_status_t ECALL_prepare_test_sessions([in,size=16] uint8_t *ida, [in,size=16] uint8_t *dc);
- 
 --- a/isv_app/bench.cpp
 +++ b/isv_app/bench.cpp
-@@ -25,13 +25,13 @@
+@@ -9,6 +9,7 @@
+ #include <stdexcept>
+ #include <time.h>
+ #include <sys/stat.h>
++extern "C" uint64_t OCALL_diag_now(){timespec t{};if(clock_gettime(CLOCK_MONOTONIC_RAW,&t))abort();return uint64_t(t.tv_sec)*UINT64_C(1000000000)+uint64_t(t.tv_nsec);}
+ static timespec end_time{};
+ static unsigned endpoints=0;
+ extern "C" void OCALL_processing_end(){if(clock_gettime(CLOCK_MONOTONIC_RAW,&end_time)!=0)abort();++endpoints;}
+@@ -24,13 +25,13 @@
      EVP_CIPHER_CTX_free(ctx);require(ok&&n+last==int(size),"provision encryption");
  }
  int main(int argc,char** argv){
@@ -160,7 +44,7 @@
          std::vector<uint8_t> key,marker;
          require(pg_read_exact((fixture+"/PUBLIC_TEST_ONLY").c_str(),64,marker)&&
                  std::string(marker.begin(),marker.end())=="PUBLIC SYNTHETIC KEYS ONLY\n","public fixture marker");
-@@ -51,6 +51,10 @@
+@@ -50,6 +51,10 @@
              require(pg_read_exact((fixture+"/input.tag").c_str(),16,warm)&&warm.size()==16,"tag cache warmup");
          }
          sgx_status_t inner=SGX_ERROR_UNEXPECTED,outer;
@@ -171,10 +55,16 @@
          outer=ECALL_enclave_DO_config(enclave.enclave_id,&inner,mode=="bad-config"?2:1);
          if(mode=="bad-config"){require(!good(outer,inner),"invalid config accepted");}
          else{
-@@ -102,6 +106,12 @@
-                                 printf("{\"svm_diagnostic\":{\"stamps_ns\":[%llu,%llu,%llu,%llu,%llu,%llu]}}\n",
-                                     (unsigned long long)stamps[0],(unsigned long long)stamps[1],(unsigned long long)stamps[2],
-                                     (unsigned long long)stamps[3],(unsigned long long)stamps[4],(unsigned long long)stamps[5]);
+@@ -95,6 +100,18 @@
+                             if(mode=="repeat-delivery")require(pg_make_delivery(&enclave,ida,dc)!=0,"repeat delivery accepted");
+                             else{
+                                 require(mode=="normal","unknown mode");
++                                uint64_t stamps[6]{};
++                                outer=ECALL_svm_diagnostics(enclave.enclave_id,&inner,stamps);
++                                require(good(outer,inner),"diagnostic readback");
++                                printf("{\"svm_diagnostic\":{\"stamps_ns\":[%llu,%llu,%llu,%llu,%llu,%llu]}}\n",
++                                    (unsigned long long)stamps[0],(unsigned long long)stamps[1],(unsigned long long)stamps[2],
++                                    (unsigned long long)stamps[3],(unsigned long long)stamps[4],(unsigned long long)stamps[5]);
 +                                uint8_t entries[128]{};int selected=-1;
 +                                outer=ECALL_math_read(enclave.enclave_id,&inner,entries,&selected);
 +                                require(good(outer,inner)&&selected==math_mode,"math readback");
@@ -184,3 +74,91 @@
                                  double ms=(end_time.tv_sec-begin.tv_sec)*1000.0+(end_time.tv_nsec-begin.tv_nsec)/1e6;
                                  require(ms>0,"processing endpoint");
                                  require(mkdir(output.c_str(),0700)==0,"new output directory");
+--- a/isv_enclave/diag_platform.cpp
++++ b/isv_enclave/diag_platform.cpp
+@@ -1,7 +1,11 @@
+ #include <stdint.h>
+-#include <time.h>
++#include "isv_enclave_t.h"
+ #include <cstdlib>
+-extern "C" uint64_t work2_diag_now() {
+-    timespec t{};if(clock_gettime(CLOCK_MONOTONIC_RAW,&t))abort();
+-    return uint64_t(t.tv_sec)*UINT64_C(1000000000)+uint64_t(t.tv_nsec);
+-}
++extern "C" int work2_svm_diag_read(uint64_t*);
++extern "C" uint64_t work2_diag_now(){uint64_t n=0;if(OCALL_diag_now(&n)!=SGX_SUCCESS||!n)abort();return n;}
++sgx_status_t ECALL_svm_diagnostics(uint64_t* out){return work2_svm_diag_read(out)?SGX_SUCCESS:SGX_ERROR_UNEXPECTED;}
++
++extern "C" int work2_math_select(int);
++extern "C" int work2_math_bytes(unsigned char*);
++sgx_status_t ECALL_math_select(int mode){return work2_math_select(mode)?SGX_SUCCESS:SGX_ERROR_INVALID_PARAMETER;}
++sgx_status_t ECALL_math_read(uint8_t* values,int* mode){if(!values||!mode)return SGX_ERROR_INVALID_PARAMETER;*mode=work2_math_bytes(values);return (*mode==0||*mode==1)?SGX_SUCCESS:SGX_ERROR_UNEXPECTED;}
+--- a/isv_enclave/isv_enclave.config.xml
++++ b/isv_enclave/isv_enclave.config.xml
+@@ -2,7 +2,7 @@
+   <ProdID>0</ProdID>
+   <ISVSVN>0</ISVSVN>
+   <StackMaxSize>0x80000</StackMaxSize> <!-- original: 0x40000 -->
+-  <HeapMaxSize>0x5C00000</HeapMaxSize> <!-- original: 0x100000 -->
++  <HeapMaxSize>0x40000000</HeapMaxSize> <!-- original: 0x100000 -->
+   <TCSNum>4</TCSNum>
+   <TCSPolicy>1</TCSPolicy>
+   <!-- Recommend changing 'DisableDebug' to 1 to make the enclave undebuggable for enclave release -->
+--- a/isv_enclave/isv_enclave.edl
++++ b/isv_enclave/isv_enclave.edl
+@@ -36,6 +36,9 @@
+     include "sgx_trts.h"
+ 
+     trusted {
++        public sgx_status_t ECALL_math_select(int mode);
++        public sgx_status_t ECALL_math_read([out,count=128] uint8_t* values, [out] int* mode);
++        public sgx_status_t ECALL_svm_diagnostics([out,count=6] uint64_t* values);
+         public sgx_status_t ECALL_prepare_test_sessions([in,size=16] uint8_t *ida, [in,size=16] uint8_t *dc);
+ 
+         public sgx_status_t ECALL_enclave_DO_config(
+@@ -117,6 +120,7 @@
+ 
+ 
+     untrusted {
++        uint64_t OCALL_diag_now();
+         void OCALL_processing_end();
+         // To display string buffer inside the enclave.
+         void OCALL_print_string([in, string] const char *str);
+--- a/isv_enclave/math_probe.cpp
++++ b/isv_enclave/math_probe.cpp
+@@ -8,12 +8,12 @@
+ int work2_math_select(int mode) {
+     if (mode != 0 && mode != 1) return 0;
+     selected_mode = mode;
+-    work2_exp_fn = mode ? work2_probe_exp : exp;
++    work2_exp_fn = mode ? work2_probe_exp : static_cast<double(*)(double)>(exp);
+     return 1;
+ }
+ int work2_math_bytes(unsigned char* out) {
+     if (!out) return -1;
+-    std::memcpy(out, reinterpret_cast<const void*>(exp), 64);
++    std::memcpy(out, reinterpret_cast<const void*>(static_cast<double(*)(double)>(exp)), 64);
+     std::memcpy(out+64, reinterpret_cast<const void*>(work2_probe_exp), 64);
+     return selected_mode;
+ }
+--- a/isv_enclave/t1_core.inc
++++ b/isv_enclave/t1_core.inc
+@@ -1,6 +1,7 @@
+ // Included in the formal CEE source; benchmark and production use these same
+ // ECALLs. Test session injection is compiled ONLY with PG_BENCHMARK.
+ #include "adult_t1.hpp"
++#include "svm_task.h"
+ #include <atomic>
+ #include <new>
+ #include <memory>
+@@ -124,7 +125,9 @@
+             reinterpret_cast<const sgx_aes_gcm_128bit_tag_t*>(tag));
+         if(status!=SGX_SUCCESS)return pg_fail(status);
+         std::string result;
+-        if(!pg_adult_statistics(plain.p,size,result))return pg_fail(SGX_ERROR_INVALID_PARAMETER);
++        char summary[512]; int summary_length=work2_svm_summary(plain.p,size,summary,sizeof(summary));
++        if(summary_length<=0)return pg_fail(SGX_ERROR_INVALID_PARAMETER);
++        result.assign(summary,size_t(summary_length)); pg_wipe(summary,sizeof(summary));
+         status=sgx_read_rand(K_result,sizeof(K_result));
+         if(status==SGX_SUCCESS)status=sgx_rijndael128GCM_encrypt(
+             reinterpret_cast<const sgx_aes_gcm_128bit_key_t*>(K_result),

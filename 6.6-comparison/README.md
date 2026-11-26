@@ -29,10 +29,17 @@ python3 third_party/vddpi/dependencies/fetch_dependencies.py
 ```
 
 For rebuilding third-party SGX toolchains on Linux x86_64:
-- **PrivacyGuard:** download and verify the three Intel SGX SDK `2.27.100.1` / protobuf packages listed in `third_party/privacyguard/toolchain.json` and build `third_party/privacyguard/Dockerfile.build`; `common_svm/extract_exp.py` and `common_svm/build_pg.sh` document the exact frozen container steps used to link the shared `e_exp.o` object (`privacyguard-exp.patch` records the diff from the SVM diagnostic build to the common-`exp` build).
-- **VDDPI:** after running `fetch_dependencies.py`, build `third_party/vddpi/adapter/Dockerfile.toolchain` and `Dockerfile.runtime`.
+- **PrivacyGuard:** prepare the exact 6.6 common-`exp` SVM source tree from the fetched upstream archive:
+  ```sh
+  python3 6.6-comparison/prepare_privacyguard_t1.py --out tmp/pg-svm --flavor benchmark
+  cp 6.6-comparison/common_svm/{diag_platform.cpp,math_probe.cpp,svm.h,svm_task.cpp,svm_task.h,transform.hpp} tmp/pg-svm/CEE/isv_enclave/
+  cp 6.6-comparison/common_svm/svm.cpp tmp/pg-svm/CEE/isv_enclave/enclave_svm.cpp
+  patch --batch --fuzz=0 -p1 -d tmp/pg-svm/CEE -i "$(pwd)/6.6-comparison/common_svm/privacyguard-exp.patch"
+  ```
+  Then download and verify the three Intel SGX SDK `2.27.100.1` / protobuf packages listed in `third_party/privacyguard/toolchain.json`, build `third_party/privacyguard/Dockerfile.build`, extract `probe_exp.o` with `common_svm/extract_exp.py`, and compile `tmp/pg-svm/CEE` using `common_svm/build_pg.sh`.
+- **VDDPI:** after running `fetch_dependencies.py`, build `third_party/vddpi/adapter/Dockerfile.toolchain` and `Dockerfile.runtime`, and prepare the patched application source with `python3 6.6-comparison/prepare_vddpi.py --out tmp/vddpi-app`.
 
-> Note: This repository preserves the formal common-`exp` sources, patches, and container build references for auditability, together with standalone offline verifiers for the archived hardware runs; it does not provide a single-command end-to-end rebuild orchestrator across all three SGX toolchains.
+> Note: This repository preserves the complete common-`exp` sources, patches, and container build steps for auditability, together with standalone offline verifiers; it does not provide a single-command orchestrator across all three SGX container toolchains.
 
 ## Verification of Table V Results
 

@@ -25,7 +25,7 @@
       "adaptations": [
         "third_party/privacyguard/compat-sdk227.patch: Intel SGX SDK 2.27 compilation compatibility.",
         "third_party/privacyguard/t1-adapter.patch: CEE DataOwner/iDataAgent benchmark harness, buffer/hash length fixes, error propagation, and HW non-debug build configuration.",
-        "6.6-comparison/common_svm/privacyguard-exp.patch: Common SVM task integration and shared Intel SGX SDK e_exp.o dispatch."
+        "6.6-comparison/common_svm/privacyguard-exp.patch: Direct patch from prepare_privacyguard_t1.py (--flavor benchmark) to the Section 6.6 common-exp SVM CEE enclave/host build (applied together with 6.6-comparison/common_svm/ C++ files)."
       ]
     },
     {
