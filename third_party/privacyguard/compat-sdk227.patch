@@ -1,0 +1,120 @@
+--- a/CEE/Makefile
++++ b/CEE/Makefile
+@@ -96,17 +96,13 @@
+         App_C_Flags += -DNDEBUG -UEDEBUG -UDEBUG
+ endif
+ 
+-My_libopencv_untrusted_Name := sgx_ucv
+-My_libsvm_u_Name := svm_u # the orginal libsvm.a, thus untrusted
+ 
+ 
+ App_Cpp_Flags := $(App_C_Flags) -std=c++11
+ App_Link_Flags := $(SGX_COMMON_CFLAGS) -L$(SGX_LIBRARY_PATH) \
+     -l$(Urts_Library_Name) \
+-    -l$(My_libsvm_u_Name) \
+-    -l$(My_libopencv_untrusted_Name) \
+     -L. -lsgx_ukey_exchange -lpthread -lservice_provider \
+-    -Wl,-rpath=$(CURDIR)/sample_libcrypto -Wl,-rpath=$(CURDIR)
++    -Wl,-rpath,'$$ORIGIN/sample_libcrypto' -Wl,-rpath,'$$ORIGIN'
+ 
+ 
+ ifneq ($(SGX_MODE), HW)
+@@ -122,11 +118,11 @@
+ ######## Service Provider Settings ########
+ 
+ ServiceProvider_Cpp_Files := service_provider/ecp.cpp service_provider/network_ra.cpp service_provider/service_provider.cpp service_provider/ias_ra.cpp 
+-ServiceProvider_Include_Paths := -I$(SGX_SDK)/include -I$(SGX_SDK)/include/tlibc -I$(SGX_SDK)/include/stlport -Isample_libcrypto
++ServiceProvider_Include_Paths := -I$(SGX_SDK)/include -I$(SGX_SDK)/include/tlibc -I$(SGX_SDK)/include/libcxx -Isample_libcrypto
+ 
+ ServiceProvider_C_Flags := $(SGX_COMMON_CFLAGS) -fPIC -Wno-attributes -I$(SGX_SDK)/include -Isample_libcrypto
+ ServiceProvider_Cpp_Flags := $(ServiceProvider_C_Flags) -std=c++11
+-ServiceProvider_Link_Flags :=  -shared $(SGX_COMMON_CFLAGS) -L$(SGX_LIBRARY_PATH) -lsample_libcrypto -Lsample_libcrypto
++ServiceProvider_Link_Flags :=  -shared $(SGX_COMMON_CFLAGS) -L$(SGX_LIBRARY_PATH) -lsample_libcrypto -Lsample_libcrypto -Wl,-rpath,'$$ORIGIN/sample_libcrypto'
+ 
+ ServiceProvider_Cpp_Objects := $(ServiceProvider_Cpp_Files:.cpp=.o)
+ 
+@@ -141,18 +137,16 @@
+ endif
+ Crypto_Library_Name := sgx_tcrypto
+ Standard_C_Library_Name := sgx_tstdc
+-My_libsecp256k1_Name := secp256k1
+-My_workaround_Name := workaround
+ 
+ Enclave_Cpp_Files := isv_enclave/isv_enclave.cpp isv_enclave/enclave_utilities.cpp isv_enclave/enclave_svm.cpp isv_enclave/enclave_fann.cpp isv_enclave/enclave_keccak.cpp
+ Enclave_Include_Paths := -I$(SGX_SDK)/include \
+     -I$(SGX_SDK)/include/tlibc \
+-    -I$(SGX_SDK)/include/stlport \
++    -I$(SGX_SDK)/include/libcxx \
+     -Iisv_enclave/include \
+     -Iisv_enclave/include/fann
+ 
+ Enclave_C_Flags := $(SGX_COMMON_CFLAGS) -nostdinc -fvisibility=hidden -fpie -fstack-protector $(Enclave_Include_Paths)
+-Enclave_Cpp_Flags := $(Enclave_C_Flags) -std=c++03 -nostdinc++ -fpermissive
++Enclave_Cpp_Flags := $(Enclave_C_Flags) -std=c++11 -nostdinc++ -fpermissive
+ 
+ # To generate a proper enclave, it is recommended to follow below guideline to link the trusted libraries:
+ #    1. Link sgx_trts with the `--whole-archive' and `--no-whole-archive' options,
+@@ -163,12 +157,10 @@
+ # Otherwise, you may get some undesirable errors.
+ Enclave_Link_Flags := $(SGX_COMMON_CFLAGS) -Wl,--no-undefined -nostdlib -nodefaultlibs -nostartfiles -L$(SGX_LIBRARY_PATH) \
+ 	-Wl,--whole-archive -l$(Trts_Library_Name) -Wl,--no-whole-archive \
+-	-Wl,--start-group -lsgx_tstdc -lsgx_tstdcxx -lsgx_tkey_exchange \
++	-Wl,--start-group -lsgx_tstdc -lsgx_tcxx -lsgx_tkey_exchange \
+ 	-l$(Crypto_Library_Name) \
+ 	-l$(Standard_C_Library_Name) \
+ 	-l$(Service_Library_Name) \
+-	-l$(My_libsecp256k1_Name) \
+-	-l$(My_workaround_Name) \
+ 	-Wl,--end-group \
+ 	-Wl,-Bstatic -Wl,-Bsymbolic -Wl,--no-undefined \
+ 	-Wl,-pie,-eenclave_entry -Wl,--export-dynamic  \
+--- a/CEE/isv_app/operations.cpp
++++ b/CEE/isv_app/operations.cpp
+@@ -149,7 +149,7 @@
+ 	----------------------------*/
+ 	{
+ 	    memset(&launch_token, 0, sizeof(sgx_launch_token_t));
+-        ret = sgx_create_enclave(_T(ENCLAVE_PATH), SGX_DEBUG_FLAG, &launch_token, &launch_token_update, &enclave_info->enclave_id, NULL);
++        ret = sgx_create_enclave(_T(ENCLAVE_PATH), 0, &launch_token, &launch_token_update, &enclave_info->enclave_id, NULL);
+         if(SGX_SUCCESS != ret)
+         {
+             fprintf(OUTPUT, "\nError, call sgx_create_enclave() fail. [%s]", __FUNCTION__);
+--- a/CEE/isv_enclave/isv_enclave.cpp
++++ b/CEE/isv_enclave/isv_enclave.cpp
+@@ -291,22 +291,15 @@
+     sgx_status_t ret;
+     if(b_pse)
+     {
+-        int busy_retry_times = 2;
+-        do{
+-            ret = sgx_create_pse_session();
+-        }while (ret == SGX_ERROR_BUSY && busy_retry_times--);
+-        if (ret != SGX_SUCCESS) return ret;
++        // PSE is not available in the selected SDK. Both CEE callers use false.
++        // Reject an unsupported request rather than silently skipping services.
++        return SGX_ERROR_FEATURE_NOT_SUPPORTED;
+     }
+ #ifdef SUPPLIED_KEY_DERIVATION
+     ret = sgx_ra_init_ex(&g_sp_pub_key, b_pse, key_derivation, p_context);
+ #else
+     ret = sgx_ra_init(&g_sp_pub_key, b_pse, p_context);
+ #endif
+-    if(b_pse)
+-    {
+-        sgx_close_pse_session();
+-        return ret;
+-    }
+     return ret;
+ }
+ 
+--- a/CEE/isv_enclave/isv_enclave.config.xml
++++ b/CEE/isv_enclave/isv_enclave.config.xml
+@@ -6,7 +6,7 @@
+   <TCSNum>4</TCSNum>
+   <TCSPolicy>1</TCSPolicy>
+   <!-- Recommend changing 'DisableDebug' to 1 to make the enclave undebuggable for enclave release -->
+-  <DisableDebug>0</DisableDebug>
++  <DisableDebug>1</DisableDebug>
+   <MiscSelect>0</MiscSelect>
+   <MiscMask>0xFFFFFFFF</MiscMask>
+ </EnclaveConfiguration>

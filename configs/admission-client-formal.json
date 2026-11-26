@@ -1,0 +1,78 @@
+{
+  "stage": "linux-client-formal",
+  "prepared_dir": "data/adult/full-records",
+  "datasets": [
+    "adult-full.csv",
+    "synthetic-full.csv"
+  ],
+  "repetitions": 30,
+  "order_seed": 20261030,
+  "gomaxprocs": 2,
+  "rho": 0.05,
+  "epsilon": 0.0001,
+  "challenge_budget": 100,
+  "b1_records": {
+    "adult-full.csv": [
+      1000,
+      5000,
+      10000,
+      48842
+    ],
+    "synthetic-full.csv": [
+      1000,
+      5000,
+      10000,
+      50000,
+      100000
+    ]
+  },
+  "b2_records": 10000,
+  "b2_dataset": "adult-full.csv",
+  "b2_parameters": [
+    {
+      "rho": 0.01,
+      "epsilon": 0.01
+    },
+    {
+      "rho": 0.01,
+      "epsilon": 0.001
+    },
+    {
+      "rho": 0.01,
+      "epsilon": 0.0001
+    },
+    {
+      "rho": 0.05,
+      "epsilon": 0.01
+    },
+    {
+      "rho": 0.05,
+      "epsilon": 0.001
+    },
+    {
+      "rho": 0.05,
+      "epsilon": 0.0001
+    },
+    {
+      "rho": 0.1,
+      "epsilon": 0.01
+    },
+    {
+      "rho": 0.1,
+      "epsilon": 0.001
+    },
+    {
+      "rho": 0.1,
+      "epsilon": 0.0001
+    }
+  ],
+  "b3_records": 10000,
+  "b3_checkpoints": [
+    10
+  ],
+  "record_format": "adult.raw.v1",
+  "measurement_schema": "commitment-v2",
+  "b3_datasets": [
+    "adult-full.csv"
+  ]
+}

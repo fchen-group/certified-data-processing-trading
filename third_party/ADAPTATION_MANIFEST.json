@@ -1,0 +1,47 @@
+{
+  "description": "Pinned third-party sources, licenses, and adaptations used for Section 6.6 comparison benchmarks.",
+  "components": [
+    {
+      "name": "LIBSVM",
+      "version": "3.23",
+      "upstream_repository": "https://github.com/cjlin1/libsvm",
+      "upstream_tag": "v323",
+      "license": "BSD-3-Clause",
+      "license_file": "third_party/libsvm-3.23/COPYRIGHT",
+      "source_manifest": "third_party/libsvm-3.23/source.json",
+      "adaptations": [
+        "Portability adjustments for SGX enclave compilation (remove unused file model I/O and stdio fprintf calls, forbid unseeded rand paths) recorded in 6.6-comparison/common_svm/svm.cpp.",
+        "Common exp dispatch hook (work2_exp_fn / work2_probe_exp) for the controlled Section 6.6 comparison recorded in 6.6-comparison/common_svm/solver-dispatch.patch."
+      ]
+    },
+    {
+      "name": "PrivacyGuard",
+      "upstream_repository": "https://github.com/yang-sec/PrivacyGuard",
+      "commit": "1ef665fca9dadf00bc0bb363842ab471a747ab0a",
+      "archive_sha256": "b5eb6522ab0bd304baba12560571a9cd668aedc0f0bc787f4550c0878e02e196",
+      "license": "Upstream repository does not include a standalone LICENSE file; upstream archive is fetched on demand rather than redistributed in Git.",
+      "source_manifest": "third_party/privacyguard/source.json",
+      "fetch_script": "6.6-comparison/prepare_privacyguard_source.py --fetch",
+      "adaptations": [
+        "third_party/privacyguard/compat-sdk227.patch: Intel SGX SDK 2.27 compilation compatibility.",
+        "third_party/privacyguard/t1-adapter.patch: CEE DataOwner/iDataAgent benchmark harness, buffer/hash length fixes, error propagation, and HW non-debug build configuration.",
+        "6.6-comparison/common_svm/privacyguard-exp.patch: Common SVM task integration and shared Intel SGX SDK e_exp.o dispatch."
+      ]
+    },
+    {
+      "name": "VDDPI",
+      "upstream_repository": "https://github.com/VDDPI/VDDPI",
+      "commit": "7f2994bbd5889a31952658c88dd78c5d51f32012",
+      "archive_sha256": "2713bac1092648f295000286fdbe862691718f8b6a0dcaa962d05a37d8166162",
+      "license": "Upstream repository does not include a standalone LICENSE file; upstream archive and CPython 3.6.9 wheels are fetched on demand rather than redistributed in Git.",
+      "source_manifest": "third_party/vddpi/source.json",
+      "fetch_script": "third_party/vddpi/dependencies/fetch_dependencies.py",
+      "adaptations": [
+        "third_party/vddpi/patches/01-correctness.patch: Certificate CN binding, quote length check, usage-condition failure propagation, and post-expiry cache removal.",
+        "third_party/vddpi/patches/02-timing.patch: Continuous protected-processing timing boundary instrumentation.",
+        "third_party/vddpi/patches/03-task.patch: Common C++ LIBSVM task library integration via plib.py.",
+        "third_party/vddpi/patches/04-interpreter.patch: Hash-checked CPython 3.6.9 entry point adaptation for Gramine 1.9."
+      ]
+    }
+  ]
+}

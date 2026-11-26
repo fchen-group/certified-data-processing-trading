@@ -1,0 +1,35 @@
+{
+  "purpose": "Linux x86_64 compilation and signing only; no hardware execution claim",
+  "platform": "linux/amd64",
+  "base_image": "ghcr.io/edgelesssys/ego-dev@sha256:ec7e09e3187f01cfa3ae8a823970557cf1ac5db92fea5f0b10bcbceacb262301",
+  "sdk_version": "2.27.100.1",
+  "official_checksums_url": "https://download.01.org/intel-sgx/sgx-linux/2.27/SHA256SUM_linux_2.27.cfg",
+  "downloads": [
+    {
+      "url": "https://download.01.org/intel-sgx/sgx-linux/2.27/distro/ubuntu22.04-server/sgx_linux_x64_sdk_2.27.100.1.bin",
+      "filename": "sgx_linux_x64_sdk_2.27.100.1.bin",
+      "sha256": "8ba7a692ed2a8168e49dab76ea72b1b97a413d463d420b72df511b66e67cd365"
+    },
+    {
+      "url": "https://download.01.org/intel-sgx/sgx-linux/2.27/distro/ubuntu22.04-server/sgx_debian_local_repo.tgz",
+      "filename": "sgx_debian_local_repo.tgz",
+      "sha256": "a9afc0277733144c8ddbf5e73e1e86f6a738876dd1d04123935beb3a05e53292"
+    },
+    {
+      "url": "https://archive.ubuntu.com/ubuntu/pool/main/p/protobuf/libprotobuf23_3.12.4-1ubuntu7.22.04.6_amd64.deb",
+      "filename": "libprotobuf23_3.12.4-1ubuntu7.22.04.6_amd64.deb",
+      "sha256": "b3680d038ac8272d3793d7c3eda651b19522127e7679c9c504f7ac548bbdf2ce",
+      "provenance": "Ubuntu signed apt repository; see build result protobuf-download.log"
+    }
+  ],
+  "host_runtime_version": "2.28.100.1-jammy1 (from pinned base image)",
+  "legacy_host_api_libraries": "libsgx-epid, libsgx-launch, libsgx-quote-ex, libsgx-uae-service 2.27.100.1-jammy1",
+  "compiler": "GCC/G++ 11.4.0-1ubuntu1~22.04.3",
+  "sdk_selection_reason": "SDK 2.28 and later remove the EPID interfaces used by CEE; 2.27 is used for compilation compatibility, not to claim live IAS attestation.",
+  "release_notes_url": "https://github.com/intel/confidential-computing.sgx/releases/tag/sgx_2.28",
+  "upstream_prebuilt_dependency": {
+    "path": "CEE/sample_libcrypto/libsample_libcrypto.so",
+    "sha256": "c97cf4b5f5983477daa9b2c6e20017fc6e4314ee5924aac272438946380269a7",
+    "scope": "Upstream host-side remote-attestation sample library, linked but not executed; no trusted enclave code is taken from upstream prebuilt enclave binaries."
+  }
+}

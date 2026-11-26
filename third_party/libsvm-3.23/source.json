@@ -1,0 +1,26 @@
+{
+  "svm.cpp": {
+    "url": "https://raw.githubusercontent.com/cjlin1/libsvm/v323/svm.cpp",
+    "sha256": "dd383378a37e05fc2aab327ecf1cc12c7bce4de8f2ca3a2caf7031e62ea3294c"
+  },
+  "svm.h": {
+    "url": "https://raw.githubusercontent.com/cjlin1/libsvm/v323/svm.h",
+    "sha256": "7371e9bfa03f9c358c5083b3764d44cea28c8b2fe4b5ac49df86d498d2a6e8f0"
+  },
+  "svm-train.c": {
+    "url": "https://raw.githubusercontent.com/cjlin1/libsvm/v323/svm-train.c",
+    "sha256": "004f0ba35101a8564fd535c13abacfc3e166f8ebddda73729f4be93526cc15bc"
+  },
+  "svm-predict.c": {
+    "url": "https://raw.githubusercontent.com/cjlin1/libsvm/v323/svm-predict.c",
+    "sha256": "a5ee5a5573d097bfd00913bc1eae8185eb1c6060c3b630ef861eea747b5f191c"
+  },
+  "COPYRIGHT": {
+    "url": "https://raw.githubusercontent.com/cjlin1/libsvm/v323/COPYRIGHT",
+    "sha256": "529b444f4b5e03b4f63991ced9aac7695448dff10a0a46058ff1c60b04c39313"
+  },
+  "README": {
+    "url": "https://raw.githubusercontent.com/cjlin1/libsvm/v323/README",
+    "sha256": "b1328282b7552f107533a89e340318c2680c7e257b84ca2526f76ef52ff84e5d"
+  }
+}

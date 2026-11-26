@@ -1,0 +1,169 @@
+--- a/docker/gramine_consumer/code_eval_02/main.py
++++ b/docker/gramine_consumer/code_eval_02/main.py
+@@ -5,6 +5,7 @@
+ import jwt
+ import copy
+ import ast
++import base64
+ import socket
+ import ssl
+ from cryptography import x509
+@@ -17,8 +18,8 @@
+ TRUSTED_CA_CERT = "./certs/RootCA.pem"
+ SKEY = "./certs/private.key"
+ CONSUMER_CERT = "./certs/client.pem"
+-DUMMY_CERT = "./code/dummy.pem"
+-DUMMY_KEY = "./code/dummy.key"
++DUMMY_CERT = "./certs/server.pem"
++DUMMY_KEY = "./certs/server.key"
+ 
+ ##############################################
+ ######The following codes can be changed.#####
+@@ -43,12 +44,16 @@
+     return True, received_data
+ 
+ def check_condition_phase(usage_condition):
+-    if(not check_expiration_date(usage_condition)):
+-        return False, 1
+-    
+-    if (not check_location(usage_condition)):
+-        return False, 0
+-    
++    counter = usage_condition["counter"]
++    if counter != "":
++        if not isinstance(counter, str) or not counter.isdigit() or int(counter) <= 0:
++            return False, 1
++    ok, status = check_expiration_date(usage_condition)
++    if not ok:
++        return False, status
++    ok, status = check_location(usage_condition)
++    if not ok:
++        return False, status
+     return True, 0
+ 
+ def check_expiration_date(condition):
+@@ -170,22 +175,30 @@
+     if (payload["consumer"] != cname):
+         raise RuntimeError("Invalid consumer")
+     
+-    for ext in cert.extensions:
+-        if (ext.value.oid.dotted_string == "1.2.3.5"):
++    identity_found = False
++    for ext in client_cert.extensions:
++        if (ext.oid.dotted_string == "1.2.3.5"):
+             report = ast.literal_eval(ext.value.value.decode())
+-            MRENCLAVE = base64.b64decode(report["isvEnclaveQuoteBody"])[112:144].hex()
++            quote = base64.b64decode(report["isvEnclaveQuoteBody"], validate=True)
++            if len(quote) < 144:
++                raise RuntimeError("truncated identity report")
++            MRENCLAVE = quote[112:144].hex()
+             if (MRENCLAVE != payload["app_ID"]):
+                 raise RuntimeError("Invalid App")
+             else:
++                identity_found = True
+                 break
+-    
++    if not identity_found:
++        raise RuntimeError("missing application identity")
+     return payload
+ 
+ def read_data_from_cache(file_path, client_cn):
+     with open(file_path, "r") as f:
+         cached_data = json.load(f)
+         if (cached_data["clientCN"] != client_cn):
+-            print("Failed to load cached data due to invalid client CN.")
++            raise PermissionError("cached data belongs to another client")
++        if cached_data["path"] != file_path:
++            raise PermissionError("cached path does not match request")
+         return cached_data
+ 
+ CERTIFICATE_DN_CHECKED = False
+@@ -202,7 +215,7 @@
+     
+     data = json.loads(requests.get(data_id, verify=TRUSTED_CA_CERT, params={"data_id": data_id}, cert=(CONSUMER_CERT, SKEY)).text)
+     data["path"] = "./data/" + data_id.replace("/", "-")
+-    data["clientCN"] = client_cn
++    data["clientCN"] = received_cert_cn
+     return data
+ 
+ def cache_data(data, file_path):
+@@ -210,11 +223,7 @@
+         f.write(json.dumps(data))
+ 
+ def remove_data(data):
+-    try:
+-        os.remove(data["path"])
+-    except Exception as e:
+-        print("Failed to remove cached data")
+-        tls_socket.send("Failed to remove cached data".encode())
++    os.remove(data["path"])
+ 
+ def store_data(data):
+     with open(data["path"], "w") as f:
+@@ -229,27 +238,13 @@
+             trusted_cert.write(cert.read())
+         
+     providers = []
+-    for line in tokens.split("\n")[:-1]:
+-        try:
+-            payload = verify_token(line.split(",")[0], line.split(",")[1])
+-            providers.append(payload)
+-        except jwt.exceptions.InvalidSignatureError as e:
+-            print(f"JWT Invalid Signature: {e}")
+-            print(f"Problematic line: {line}")
+-
+-            import traceback
+-            traceback.print_exc()
+-
+-            tls_socket.send("Invalid Signature".encode())
+-        except Exception as e:
+-            print("Invalid Certificate")
+-            print(f"Error: {e}")
+-            print(f"Exception type: {type(e).__name__}")
+-
+-            import traceback
+-            traceback.print_exc()
+-
+-            tls_socket.send("Invalid Certificate".encode())
++    for line in tokens.splitlines():
++        if not line:
++            raise ValueError("empty token line")
++        token, cert = line.split(",", 1)
++        providers.append(verify_token(token, cert))
++    if not providers:
++        raise ValueError("no authorized inputs")
+ 
+     provided_data_uc = []
+     provided_data = []
+@@ -267,26 +262,20 @@
+             # data acquisition phase
+             is_succeeded, data = data_acquisition(usage_statement["data_ID"], client_cn)
+             if (not is_succeeded):
+-                print("Failed to receive data: " + usage_statement["data_ID"])
+-                tls_socket.send("Failed to receive data".encode())
+-                continue
++                raise RuntimeError("failed to receive authorized input")
+             provided_data_uc.append(data)
+ 
+         # data usage condition check phase
+         is_ok, is_expired = check_condition_phase(provided_data_uc[-1]["condition"])
+         if (not is_ok):
+-            print("The usage condition is not met: " + usage_statement["data_ID"])
+-            tls_socket.send("The usage condition is not met".encode())
+-            if (is_expired == 0):
+-                provided_data_uc[-1]["expired"] = True
+-            is_met_condition = False
++            if is_expired == 0:
++                remove_data(provided_data_uc[-1])
++            raise PermissionError("usage condition is not met")
+         else:
+             if (int(usage_statement["arg_num"]) == len(provided_data) + 1):
+                 provided_data.append(copy.deepcopy(provided_data_uc[-1]["data"]))
+             else:
+-                print("Invalid argument number.")
+-                tls_socket.send("Invalid argument number".encode())
+-                continue
++                raise ValueError("invalid argument number")
+     
+     start_process_data = datetime.now()
+     if (is_met_condition):

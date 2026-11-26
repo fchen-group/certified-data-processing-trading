@@ -1,0 +1,58 @@
+{
+  "interval_utc": {
+    "start": "2025-11-01",
+    "end_exclusive": "2026-11-01",
+    "end_inclusive": "2026-10-31",
+    "days": 365
+  },
+  "sources": {
+    "gas_price": "https://etherscan.io/chart/gasprice?output=csv",
+    "eth_usd_price": "https://etherscan.io/chart/etherprice?output=csv"
+  },
+  "source_sha256": {
+    "etherscan-gasprice.csv": "6fc8abd8157a82a454bbb4351f976771c387d97ebc463e5d70cc3602e5e5e60d",
+    "etherscan-etherprice.csv": "dad7e84274831d68bd1bfd5401f893c9e0da215c398940163261a55ca156ce2d"
+  },
+  "verification": "365 consecutive dates, no duplicates/missing/nonpositive values; source timestamps checked against date labels",
+  "mean_daily_gas_price_gwei": "0.936417504909589041095890411",
+  "mean_daily_eth_price_usd": "2378.605835616438356164383562",
+  "conversion": "Gas units * mean daily gas price (Gwei) * 1e-9 * mean daily ETH/USD price; fixed measured Osaka Gas units, not actual mainnet expenditure",
+  "usd_per_gas_product_of_means": "0.000002227368141751333308012760368",
+  "usd_per_gas_mean_daily_product": "0.000002267163100655190219178082192",
+  "tasks": {
+    "T1": {
+      "normal_trade": {
+        "gas": "496024.2",
+        "usd_product_of_means": "1.104828500617691703040383051",
+        "usd_mean_daily_product": "1.124567763272010204315632877"
+      },
+      "including_first_certification": {
+        "gas": "932438.2",
+        "usd_product_of_means": "2.076883140831958077323463855",
+        "usd_mean_daily_product": "2.113989480681344388628016439"
+      },
+      "certification_amortized_over_10_trades": {
+        "gas": "539665.6",
+        "usd_product_of_means": "1.202033964639118340468691132",
+        "usd_mean_daily_product": "1.223509935012943622746871233"
+      }
+    },
+    "T2": {
+      "normal_trade": {
+        "gas": "492763",
+        "usd_product_of_means": "1.097564607633812254856291837",
+        "usd_mean_daily_product": "1.117174090968153497972849315"
+      },
+      "including_first_certification": {
+        "gas": "929177",
+        "usd_product_of_means": "2.069619247848078629139372640",
+        "usd_mean_daily_product": "2.106595808377487682285232877"
+      },
+      "certification_amortized_over_10_trades": {
+        "gas": "536404.4",
+        "usd_product_of_means": "1.194770071655238892284599918",
+        "usd_mean_daily_product": "1.216116262709086916404087671"
+      }
+    }
+  }
+}

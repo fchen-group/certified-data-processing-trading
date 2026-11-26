@@ -1,0 +1,68 @@
+{
+  "stage": "formal",
+  "seed": 20261030,
+  "repetitions": 30,
+  "gomaxprocs": 4,
+  "cases": [
+    {
+      "id": "t1-adult-1000",
+      "task": "adult-statistics-v1",
+      "input": "data/adult/full-records/adult-full.csv",
+      "n": 1000
+    },
+    {
+      "id": "t1-adult-5000",
+      "task": "adult-statistics-v1",
+      "input": "data/adult/full-records/adult-full.csv",
+      "n": 5000
+    },
+    {
+      "id": "t1-adult-10000",
+      "task": "adult-statistics-v1",
+      "input": "data/adult/full-records/adult-full.csv",
+      "n": 10000
+    },
+    {
+      "id": "t1-adult-full",
+      "task": "adult-statistics-v1",
+      "input": "data/adult/full-records/adult-full.csv",
+      "n": 48842
+    },
+    {
+      "id": "t1-synthetic-50000",
+      "task": "adult-statistics-v1",
+      "input": "data/adult/full-records/synthetic-full.csv",
+      "n": 50000
+    },
+    {
+      "id": "t1-synthetic-100000",
+      "task": "adult-statistics-v1",
+      "input": "data/adult/full-records/synthetic-full.csv",
+      "n": 100000
+    },
+    {
+      "id": "t2-adult-1000",
+      "task": "adult-income-v1",
+      "input": "data/adult/classification/test.csv",
+      "n": 1000
+    },
+    {
+      "id": "t2-adult-5000",
+      "task": "adult-income-v1",
+      "input": "data/adult/classification/test.csv",
+      "n": 5000
+    },
+    {
+      "id": "t2-adult-10000",
+      "task": "adult-income-v1",
+      "input": "data/adult/classification/test.csv",
+      "n": 10000
+    },
+    {
+      "id": "t2-adult-full",
+      "task": "adult-income-v1",
+      "input": "data/adult/classification/test.csv",
+      "n": 16281
+    }
+  ]
+}

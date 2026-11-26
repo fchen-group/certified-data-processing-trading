@@ -1,0 +1,29 @@
+# Build artifacts, temporary outputs, and private runtime credentials
+/build/
+/tmp/
+/private/
+/contracts/out/
+/contracts/cache/
+/configs/runtime.json
+work2-sgx-key.pem
+signing-key.pem
+account.key
+*.local.key
+
+# Downloaded / generated datasets (created by 6.3-certification/prepare_adult.py)
+/data/adult/raw/
+/data/adult/full-records/
+
+# Large upstream archives and Python wheels fetched on demand
+/third_party/privacyguard/PrivacyGuard-*.tar.gz
+/third_party/vddpi/upstream.tar.gz
+/third_party/vddpi/dependencies/*.tar.*
+/third_party/vddpi/dependencies/wheels/
+
+# Python and OS noise
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.DS_Store
+*.tmp

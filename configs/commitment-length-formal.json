@@ -1,0 +1,15 @@
+{
+  "stage": "linux-client-formal",
+  "repetitions": 30,
+  "records": [1000, 5000, 10000, 50000, 100000],
+  "record_lengths": [128, 1024, 4096],
+  "gomaxprocs": 2,
+  "gogc": 100,
+  "gomemlimit": "off",
+  "go_version": "go1.26.1",
+  "order_seed": 2026111303,
+  "process_timeout_seconds": 180,
+  "input_generator": "shake256-hex-prefix-v1",
+  "timing_scope": "Prepare, then NewSnapshot and Commitment; identical boundaries to admissionbench commitment-v2; sum of both intervals",
+  "excluded": "input generation/loading, process startup, correctness checks, business review, network and chain"
+}

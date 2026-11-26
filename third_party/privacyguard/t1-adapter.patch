@@ -1,0 +1,2242 @@
+--- a/CEE/Makefile
++++ b/CEE/Makefile
+@@ -78,7 +78,7 @@
+ 	Urts_Library_Name := sgx_urts
+ endif
+ 
+-App_Cpp_Files := isv_app/isv_app.cpp isv_app/operations.cpp #isv_app/svm-train.c
++App_Cpp_Files := isv_app/isv_app.cpp isv_app/operations.cpp isv_app/t1_io.cpp #isv_app/svm-train.c
+ App_Include_Paths := -Iservice_provider \
+     -I$(SGX_SDK)/include
+ 
+@@ -98,7 +98,7 @@
+ 
+ 
+ 
+-App_Cpp_Flags := $(App_C_Flags) -std=c++11
++App_Cpp_Flags := $(App_C_Flags) -std=c++11 -Werror=return-type
+ App_Link_Flags := $(SGX_COMMON_CFLAGS) -L$(SGX_LIBRARY_PATH) \
+     -l$(Urts_Library_Name) \
+     -L. -lsgx_ukey_exchange -lpthread -lservice_provider \
+@@ -111,7 +111,7 @@
+ 	App_Link_Flags += -lsgx_uae_service
+ endif
+ 
+-App_Cpp_Objects := $(App_Cpp_Files:.cpp=.o)
++App_Cpp_Objects = $(App_Cpp_Files:.cpp=.o)
+ 
+ App_Name := app
+ 
+@@ -146,7 +146,7 @@
+     -Iisv_enclave/include/fann
+ 
+ Enclave_C_Flags := $(SGX_COMMON_CFLAGS) -nostdinc -fvisibility=hidden -fpie -fstack-protector $(Enclave_Include_Paths)
+-Enclave_Cpp_Flags := $(Enclave_C_Flags) -std=c++11 -nostdinc++ -fpermissive
++Enclave_Cpp_Flags := $(Enclave_C_Flags) -std=c++11 -nostdinc++ -fpermissive -ffp-contract=off -Werror=return-type -Werror=builtin-declaration-mismatch
+ 
+ # To generate a proper enclave, it is recommended to follow below guideline to link the trusted libraries:
+ #    1. Link sgx_trts with the `--whole-archive' and `--no-whole-archive' options,
+@@ -167,6 +167,13 @@
+ 	-Wl,--defsym,__ImageBase=0 \
+ 	-Wl,--version-script=isv_enclave/isv_enclave.lds 
+ 
++# Separate public-fixture executable; production builds omit both the setter and clock.
++ifeq ($(PG_BENCHMARK), 1)
++App_Cpp_Files := isv_app/bench.cpp isv_app/t1_io.cpp
++App_Link_Flags += -lcrypto
++Enclave_Cpp_Flags += -DPG_BENCHMARK
++endif
++
+ Enclave_Cpp_Objects := $(Enclave_Cpp_Files:.cpp=.o)
+ 
+ Enclave_Name := isv_enclave.so
+--- a/CEE/isv_app/isv_app.cpp
++++ b/CEE/isv_app/isv_app.cpp
+@@ -54,19 +54,21 @@
+ {
+     bool running = true;
+     bool enclave_on = false;
+-    enclave_info_t enclave_info;
++    enclave_info_t enclave_info{};
++    bool do_configured = false;
++    bool computation_ready = false;
+     double tic, toc, ttic, ttoc;
+     char transactionType[2][20] = {"DataOwner", "DataBroker"};
+ 
+-    int Request_DC;
+-    int Request_type;
+-    int Request_start;
+-    int Request_end;
+-    int Request_operation;
++    int Request_DC = 0;
++    int Request_type = 0;
++    int Request_start = 0;
++    int Request_end = 0;
++    int Request_operation = 0;
+ 
+ 
+     /* Communication config */
+-    int socket_init, sock_iDA_DB, sock_DC;
++    int socket_init, sock_iDA_DB = -1, sock_DC = -1;
+     bool socks_on = false;
+ 
+     // Socket config
+@@ -141,6 +143,9 @@
+ 
+             case '#':
+             {
++                fprintf(stderr, "The T1 adapter supports one DO via the sequential CEE path only.\n");
++                break;
++
+                 int DO_NUM;
+                 cout << "Enter number of DataOwners: ";
+                 cin >> DO_NUM;
+@@ -257,14 +262,22 @@
+                     Request_start     = operation_config_msg->start;
+                     Request_end       = operation_config_msg->end;
+                     Request_operation = operation_config_msg->operation;
++                    if (Request_DC <= 0 || Request_type != 0 || Request_start != 1 || Request_end != 1 || Request_operation != 1) {
++                        fprintf(stderr, "Unsupported operation configuration.\n");
++                        close(socket_new); enclave_close(&enclave_info); return 1;
++                    }
+                     printf("\nDataConsumer%d requests [%s]'s contract. Requested range: %d ~ %d, Operation: %d\n", Request_DC, transactionType[Request_type], Request_start, Request_end, Request_operation);
+                 
+-                    /* Config the enclave to assign space for DOs' data keys */
+-                    sgx_status_t status = SGX_SUCCESS;
+-                    ret = ECALL_enclave_DO_config(
+-                            enclave_info.enclave_id,
+-                            &status,
+-                            Request_end - Request_start + 1);
++                    // Configure once. The second peer must not reset provisioned keys.
++                    if (!do_configured) {
++                        sgx_status_t status = SGX_ERROR_UNEXPECTED;
++                        ret = ECALL_enclave_DO_config(enclave_info.enclave_id, &status, 1);
++                        if (ret != SGX_SUCCESS || status != SGX_SUCCESS) {
++                            fprintf(stderr, "DO configuration failed.\n");
++                            enclave_close(&enclave_info); return 1;
++                        }
++                        do_configured = true;
++                    }
+ 
+                     /* Begin attestation */
+                     tic = stime(); 
+@@ -299,7 +312,12 @@
+             case '2':
+             {
+                 tic = stime();
+-                enclave_compute_task(&enclave_info, Request_DC, Request_type, Request_start, Request_end, Request_operation);
++                if (!enclave_on || enclave_compute_task(&enclave_info, Request_DC, Request_type, Request_start, Request_end, Request_operation) != 0) {
++                    fprintf(stderr, "T1 computation failed; no delivery will follow.\n");
++                    if (enclave_on) enclave_close(&enclave_info);
++                    return 1;
++                }
++                computation_ready = true;
+                 toc = stime(); 
+                 printf("Time for CEE computation task: %f seconds\n", toc-tic);
+                 break;
+@@ -308,7 +326,12 @@
+             case '3':
+             {
+                 tic = stime();
+-                send_K_result_msgs(&enclave_info, sock_iDA_DB, sock_DC);
++                if (!enclave_on || !computation_ready || send_K_result_msgs(&enclave_info, sock_iDA_DB, sock_DC) != 0) {
++                    fprintf(stderr, "Protected result delivery failed.\n");
++                    if (enclave_on) enclave_close(&enclave_info);
++                    return 1;
++                }
++                computation_ready = false;
+                 toc = stime(); 
+                 printf("Time for CEE sending results to DC and iDA/DB: %f seconds\n", toc-tic);
+ 
+--- a/CEE/isv_app/operations.cpp
++++ b/CEE/isv_app/operations.cpp
+@@ -6,6 +6,8 @@
+ */
+ 
+ #include "operations.h"
++#include "t1_io.h"
++#include <errno.h>
+ 
+ #include <stdio.h>
+ #include <string.h>
+@@ -824,248 +826,31 @@
+ }
+ 
+ 
+-int enclave_compute_task(enclave_info_t* enclave_info, int Request_DC, int Request_type, int Request_start, int Request_end, int Request_operation)
++// The comparison adapter enables one DO, one file, and T1 only.
++int enclave_compute_task(enclave_info_t* enclave_info,int Request_DC,int Request_type,int Request_start,int Request_end,int Request_operation)
+ {
+-	FILE* OUTPUT = stdout;
+-	sgx_status_t status = SGX_SUCCESS;
+-	int ret = 0;
+-	uint32_t result_size;
+-	int i, j;
+-	int num_data = Request_end - Request_start + 1;
+-	uint32_t ctextSizes[num_data]; // each represents the size of a data file
+-	uint32_t macSizes[num_data]; // each represents the size of a gcm mac file
+-	uint32_t ctextSizes_sum = 0;
+-	uint32_t macSizes_sum = 0;
+-
+-	/* File IO init */
+-	char buf3[100], buf4[100];
+-	sprintf(buf3, "../CloudStorage/DC%d_Task%d_result_en.txt", Request_DC, Request_operation);
+-	sprintf(buf4, "../CloudStorage/DC%d_Task%d_result_en_mac.txt", Request_DC, Request_operation);	
+-	FILE *ofp_result = fopen(buf3, "wb");
+-	FILE *ofp_result_mac = fopen(buf4, "wb");
+-
+-	/* Get total file size */
+-	j = 0;
+-	for(i = Request_start; i <= Request_end; i++)
+-	{
+-		char buf1[100], buf2[100];
+-
+-		switch(Request_type)
+-		{
+-			case 0:
+-			{
+-				sprintf(buf1, "../CloudStorage/DO1_%d_en.txt", i);
+-				sprintf(buf2, "../CloudStorage/DO1_%d_mac.txt", i);	
+-				break;
+-			}
+-
+-			case 1:
+-			{
+-				sprintf(buf1, "../CloudStorage/DO%d_1_en.txt", i);
+-				sprintf(buf2, "../CloudStorage/DO%d_1_mac.txt", i);
+-				break;
+-			}
+-		}
+-
+-		FILE *ifp_data = fopen(buf1, "rb");
+-		FILE *ifp_mac = fopen(buf2, "rb");
+-		
+-		/* Obtain file size */
+-	  	fseek(ifp_data, 0, SEEK_END);
+-	  	ctextSizes[j] = ftell(ifp_data);
+-	  	rewind(ifp_data);
+-
+-	  	fseek(ifp_mac, 0, SEEK_END);
+-	  	macSizes[j] = ftell(ifp_mac);
+-	  	rewind(ifp_mac); 	
+-
+-	  	
+-		ctextSizes_sum += ctextSizes[j];
+-		macSizes_sum += macSizes[j];
+-
+-		fclose(ifp_data);
+-		fclose(ifp_mac);
+-		j ++;
+-	}
+-
+-	/* Allocate space for data */
+-	uint8_t *data;
+-	uint8_t *data_mac;
+-	data =  (uint8_t*) malloc (sizeof(uint8_t) * ctextSizes_sum);
+-	data_mac = (uint8_t*) malloc (sizeof(uint8_t) * macSizes_sum);
+-
+-
+-	/* Read file*/
+-	j = 0;
+-	int loc_data = 0, loc_mac = 0;
+-	for(i = Request_start; i <= Request_end; i++)
+-	{
+-		char buf1[100], buf2[100];
+-
+-		switch(Request_type)
+-		{
+-			case 0:
+-			{
+-				sprintf(buf1, "../CloudStorage/DO1_%d_en.txt", i);
+-				sprintf(buf2, "../CloudStorage/DO1_%d_mac.txt", i);	
+-				break;
+-			}
+-
+-			case 1:
+-			{
+-				sprintf(buf1, "../CloudStorage/DO%d_1_en.txt", i);
+-				sprintf(buf2, "../CloudStorage/DO%d_1_mac.txt", i);
+-				break;
+-			}
+-		}
+-
+-		FILE *ifp_data = fopen(buf1, "rb");
+-		FILE *ifp_mac = fopen(buf2, "rb");
+-
+-		fread(&data[loc_data],     sizeof(uint8_t), ctextSizes[j], ifp_data);
+-		fread(&data_mac[loc_mac], sizeof(uint8_t), macSizes[j],   ifp_mac);
+-
+-		fclose(ifp_data);
+-		fclose(ifp_mac);
+-
+-		loc_data += ctextSizes[j];
+-		loc_mac  += macSizes[j];
+-		j ++; 
+-	}
+-
+-
+-	
+-
+-	/* Computation result and message init */
+-	uint8_t *result_encrypted;
+-	uint8_t result_gcm_mac[AESGCM_MAC_SIZE];
+-
+-	// K_result_msg->DO_ID = DO_ID;
+-	// K_result_msg->file_num = file_num;
+-	// K_result_hash_msg->DO_ID = DO_ID;
+-	// K_result_hash_msg->file_num = file_num;
+-	
+-	
+-	/* Computation task */
+-	switch(Request_operation)
+-	{
+-		case 1: result_size = TASK1_RESULT_SIZE; break;
+-		case 2: result_size = TASK2_RESULT_SIZE; break;
+-		case 3: result_size = TASK3_RESULT_SIZE; break;
+-	}
+-	result_encrypted = (uint8_t *) malloc(result_size);
+-
+-    switch(Request_operation)
+-    {
+-    	case 1:
+-    		printf("\nBegin task 1 [summation].\n");
+-    		ret = ECALL_compute_task1(
+-                            enclave_info->enclave_id,
+-                            &status,
+-                            enclave_info->context,
+-                            num_data,
+-                            ctextSizes,
+-                            macSizes,
+-                            data,
+-                            ctextSizes_sum,
+-                            data_mac,
+-                            macSizes_sum,
+-                            result_encrypted,
+-                            result_size,
+-                            result_gcm_mac);
+-            break;
+-
+-        case 2:
+-	        printf("\nBegin task 2 [training SVM classifier].\n");
+-            ret = ECALL_compute_task2(
+-                            enclave_info->enclave_id,
+-                            &status,
+-                            enclave_info->context,
+-                            num_data,
+-                            ctextSizes,
+-                            macSizes,
+-                            data,
+-                            ctextSizes_sum,
+-                            data_mac,
+-                            macSizes_sum,
+-                            result_encrypted,
+-                            result_size,
+-                            result_gcm_mac);
+-            break;
+-
+-        case 3:
+-        	printf("\nBegin task 3 [training ANN classifier].\n");
+-            ret = ECALL_compute_task3(
+-                            enclave_info->enclave_id,
+-                            &status,
+-                            enclave_info->context,
+-                            num_data,
+-                            ctextSizes,
+-                            macSizes,
+-                            data,
+-                            ctextSizes_sum,
+-                            data_mac,
+-                            macSizes_sum,
+-                            result_encrypted,
+-                            result_size,
+-                            result_gcm_mac);
+-            break;
+-    }
+-
+-    if(SGX_SUCCESS != ret || status)
+-    {
+-        fprintf(OUTPUT, "\nError, call ECALL_computate_task%d fail [%s]. Session closed.\n", Request_operation, __FUNCTION__);
+-        // return 1;
+-    }
+-
+-    /* Store the encrypted svm_model result in the cloud */
+-    fwrite(result_encrypted, 1, result_size, ofp_result);
+-	fwrite(result_gcm_mac, 1, AESGCM_MAC_SIZE, ofp_result_mac);
+-	fclose(ofp_result);
+-	fclose(ofp_result_mac);
+-
+-	free(result_encrypted);
+-
++    if(Request_DC<=0||Request_type!=0||Request_start!=1||Request_end!=1||Request_operation!=1)return 1;
++    PgOutput out;
++    if(pg_read_compute(enclave_info,"../CloudStorage/DO1_1_en.txt","../CloudStorage/DO1_1_mac.txt",out))return 1;
++    char c[128],t[128];
++    snprintf(c,sizeof(c),"../CloudStorage/DC%d_Task1_result_en.txt",Request_DC);
++    snprintf(t,sizeof(t),"../CloudStorage/DC%d_Task1_result_en_mac.txt",Request_DC);
++    if(!pg_write_exact(c,out.ciphertext.data(),out.ciphertext.size()))return 1;
++    if(!pg_write_exact(t,out.tag.data(),out.tag.size())){remove(c);return 1;}
+     return 0;
+ }
+-
+-
+-/* Send [K_result_msg] to iDA/DB and [K_result_hash_msg] to DC */
+-int send_K_result_msgs(enclave_info_t* enclave_info, int sock_iDA_DB, int sock_DC)
++static int pg_send_all(int socket,const uint8_t* data,size_t n) {
++    while(n){ssize_t sent=send(socket,data,n,MSG_NOSIGNAL);if(sent<0&&errno==EINTR)continue;
++        if(sent<=0)return 1;data+=sent;n-=size_t(sent);}
++    return 0;
++}
++int send_K_result_msgs(enclave_info_t* enclave_info,int sock_iDA_DB,int sock_DC)
+ {
+-	sgx_status_t status = SGX_SUCCESS;
+-	int ret = 0;
+-
+-	/* Msg init */
+-
+-	/* Get the sk-encrypted K_result, K_result_hash, C_result_hash */
+-	ret = ECALL_get_K_result_hashes(
+-				    enclave_info->enclave_id,
+-                    &status,
+-                    enclave_info->context,
+-				    K_result_msg->K_result_en,
+-				    K_result_msg->K_result_mac,
+-				    K_result_hash_msg->K_result_hash_en,
+-				    K_result_hash_msg->K_result_hash_mac,
+-				    K_result_hash_msg->C_result_hash_en,
+-				    K_result_hash_msg->C_result_hash_mac);
+-
+-	/* Send K_result_msg to iDA/DB */
+-	if(write(sock_iDA_DB , K_result_msg , sizeof(K_result_msg_t)) < 0)
+-    {
+-        printf("Send K_result_msg failed.\n");
+-        return 1;
+-    }
+-
+-    /* Send K_result_hash_msg to iDA/DB */
+-	if(write(sock_DC , K_result_hash_msg , sizeof(K_result_hash_msg_t)) < 0)
+-    {
+-        printf("Send K_result_hash_msg failed.\n");
+-        return 1;
+-    }
+-
++    K_result_msg_t ida;K_result_hash_msg_t dc;
++    if(pg_make_delivery(enclave_info,ida,dc))return 1;
++    if(pg_send_all(sock_iDA_DB,reinterpret_cast<const uint8_t*>(&ida),sizeof(ida)))return 1;
++    return pg_send_all(sock_DC,reinterpret_cast<const uint8_t*>(&dc),sizeof(dc));
+ }
+-
+ 
+ // int record_datause(enclave_info_t* enclave_info, char* contract_addr)
+ // {
+--- a/CEE/isv_app/operations.h
++++ b/CEE/isv_app/operations.h
+@@ -15,7 +15,7 @@
+ #define AESGCM_MAC_SIZE 16
+ #define KECCAK_HASH_SIZE 32
+ 
+-#define TASK1_RESULT_SIZE 4       // Bytes. Summation of single digits
++#define TASK1_RESULT_SIZE 512     // Maximum JSON output bytes; actual length returned by enclave
+ #define TASK2_RESULT_SIZE 1000    // Bytes. SVM model
+ #define TASK3_RESULT_SIZE 10000   // Bytes. ANN model
+ 
+@@ -42,6 +42,7 @@
+ typedef struct _K_result_msg_t{  // to iDA/DB
+     int DO_ID;
+     int file_num;
++    uint8_t K_result_nonce[12];
+     uint8_t K_result_en[AESGCM_KEY_SIZE];
+     uint8_t K_result_mac[AESGCM_MAC_SIZE];
+ }K_result_msg_t;
+@@ -49,8 +50,10 @@
+ typedef struct _K_result_hash_msg_t{  // to DC
+     int DO_ID;
+     int file_num;
++    uint8_t K_result_hash_nonce[12];
+     uint8_t K_result_hash_en[KECCAK_HASH_SIZE];
+     uint8_t K_result_hash_mac[AESGCM_MAC_SIZE];
++    uint8_t C_result_hash_nonce[12];
+     uint8_t C_result_hash_en[KECCAK_HASH_SIZE]; // Hash of the encrypted result
+     uint8_t C_result_hash_mac[AESGCM_MAC_SIZE];
+ }K_result_hash_msg_t;
+--- a/CEE/isv_enclave/isv_enclave.cpp
++++ b/CEE/isv_enclave/isv_enclave.cpp
+@@ -245,21 +245,21 @@
+ 
+     if (ISV_KDF_ID != kdf_id)
+     {
+-        printf("ENCLAVE: Error, key derivation id mismatch. \n");
++        pg_enclave_log("ENCLAVE: Error, key derivation id mismatch. \n");
+         return SGX_ERROR_KDF_MISMATCH;
+     }
+ 
+     derive_ret = derive_key(shared_key, DERIVE_KEY_SMK_SK, smk_key, sk_key);
+     if (derive_ret != true)
+     {
+-        printf("ENCLAVE: Error, key derivation failed for SMK key. \n");
++        pg_enclave_log("ENCLAVE: Error, key derivation failed for SMK key. \n");
+         return SGX_ERROR_UNEXPECTED;
+     }
+ 
+     derive_ret = derive_key(shared_key, DERIVE_KEY_MK_VK, mk_key, vk_key);
+     if (derive_ret != true)
+     {
+-        printf("ENCLAVE: Error, key derivation failed for MK key. \n");
++        pg_enclave_log("ENCLAVE: Error, key derivation failed for MK key. \n");
+         return SGX_ERROR_UNEXPECTED;
+     }
+     return SGX_SUCCESS;
+@@ -388,235 +388,7 @@
+ 
+ 
+ 
+-/* Assign space for sk_key_DO, DO_data_key */
+-sgx_status_t ECALL_enclave_DO_config(int num_DOs)
+-{
+-    int i;
+-    sgx_status_t ret = SGX_SUCCESS;
+-    num_DOs_here = num_DOs;
+-    DO_data_key = (sgx_aes_gcm_128bit_key_t *) malloc(num_DOs * sizeof(sgx_aes_gcm_128bit_key_t));
+-    return ret;
+-}
+-
+-
+-
+-
+-// Generate a secret information for the SP encrypted with SK.
+-// Input pointers aren't checked since the trusted stubs copy
+-// them into EPC memory.
+-//
+-// @param context The trusted KE library key context.
+-// @param p_secret Message containing the secret.
+-// @param secret_size Size in bytes of the secret message.
+-// @param p_gcm_mac The pointer the the AESGCM MAC for the message.
+-// @param provisioner_type 1: DataConsumer, 2: iDataAgent
+-//
+-// @return SGX_ERROR_INVALID_PARAMETER - secret size if incorrect.
+-// @return Any error produced by tKE  API to get SK key.
+-// @return Any error produced by the AESGCM function.
+-// @return SGX_ERROR_UNEXPECTED - the secret doesn't match the expected value.
+-
+-sgx_status_t ECALL_put_secret_data(
+-    sgx_ra_context_t context,
+-    uint8_t *p_secret,
+-    uint32_t secret_size,
+-    uint8_t *p_gcm_mac,
+-    uint32_t provisioner_type)
+-{
+-    sgx_status_t ret = SGX_SUCCESS;
+-    int i, j;
+-    
+-    uint8_t aes_gcm_iv[12] = {0};
+-
+-    do {
+-
+-        if(provisioner_type == 1) // DataConsumer
+-        {
+-            ret = sgx_ra_get_keys(context, SGX_RA_KEY_SK, &sk_key_DC);
+-            if(SGX_SUCCESS != ret)
+-            {
+-                printf("[ENCLAVE] Get keys failed.\n");
+-                break;
+-            }
+-
+-            ret = sgx_rijndael128GCM_decrypt(&sk_key_DC,
+-                                         p_secret,
+-                                         secret_size,
+-                                         &g_secret_DC[0],
+-                                         &aes_gcm_iv[0],
+-                                         12,
+-                                         NULL,
+-                                         0,
+-                                         (const sgx_aes_gcm_128bit_tag_t *)(p_gcm_mac));
+-            if (ret != SGX_SUCCESS)
+-            {
+-                printf("[ENCLAVE] 128GCM decrypt failed\n");
+-            }
+-
+-            printf("\n[ENCLAVE] DataConsumer's secret is:\n");
+-            for(i=0;i<secret_size;i++)
+-            {
+-                printf("0x%02X ", g_secret_DC[i]);
+-            }
+-            printf("\n");
+-        }
+-        else // iDataAgent
+-        {
+-            ret = sgx_ra_get_keys(context, SGX_RA_KEY_SK, &sk_key_DO);
+-            if(SGX_SUCCESS != ret)
+-            {
+-                printf("[ENCLAVE] Get keys failed.\n");
+-                break;
+-            }
+-
+-            ret = sgx_rijndael128GCM_decrypt(&sk_key_DO,
+-                                         p_secret,
+-                                         secret_size,
+-                                         &DO_data_key[0][0], //&g_secret_DO[0],
+-                                         &aes_gcm_iv[0],
+-                                         12,
+-                                         NULL,
+-                                         0,
+-                                         (const sgx_aes_gcm_128bit_tag_t *)(p_gcm_mac));
+-
+-
+-            printf("\n[ENCLAVE] Data decryption keys\n");
+-
+-            // for(i = 0; i < num_DOs_here; i++)
+-            // {
+-            //     printf("Key %d: ", i+1);
+-            //     for(j = 0; j < sizeof(sgx_aes_gcm_128bit_key_t); j++)
+-            //     {
+-            //         printf("%02x", DO_data_key[i][j]);
+-            //     }
+-            //     printf("\n");
+-            // }
+-            // printf("\n");
+-        }
+-
+-        // Once the server has the shared secret, it should be sealed to
+-        // persistent storage for future use. This will prevents having to
+-        // perform remote attestation until the secret goes stale. Once the
+-        // enclave is created again, the secret can be unsealed.
+-    } while(0);
+-    return ret;
+-}
+-
+-
+-
+-
+-// This ECALL function computes the sum of data items
+-sgx_status_t ECALL_compute_task1(
+-    sgx_ra_context_t context,
+-    uint32_t data_num,
+-    uint32_t *dataSizes,
+-    uint32_t *macSizes,
+-    uint8_t *p_data_encrypted,
+-    uint32_t data_size,
+-    uint8_t *p_data_gcm_mac,
+-    uint32_t mac_size,
+-    uint8_t *p_result_encrypted,
+-    uint32_t result_size,
+-    uint8_t *p_result_gcm_mac)
+-{
+-    sgx_status_t ret = SGX_SUCCESS;
+-    uint8_t aes_gcm_iv[12] = {0};
+-    uint8_t g_data[data_size];
+-    uint8_t result[result_size];
+-    int i, j, len, N, K, C, N_sum = 0;
+-    int cryptoCount = 0;
+-    uint32_t data_loc = 0, mac_loc = 0; 
+-
+-    /* Decrypt all data files */
+-    for(j = 0; j < data_num; j++)
+-    {
+-        do{
+-            ret = sgx_rijndael128GCM_decrypt( 
+-                                        &DO_data_key[j], //(const sgx_ec_key_128bit_t*) g_secret_DO,
+-                                        &p_data_encrypted[data_loc],
+-                                        dataSizes[j],
+-                                        &g_data[data_loc],
+-                                        aes_gcm_iv,
+-                                        12,
+-                                        NULL,
+-                                        0,
+-                                        (const sgx_aes_gcm_128bit_tag_t*) &p_data_gcm_mac[mac_loc]);
+-            
+-            if(cryptoCount >= 5)
+-            {
+-                return ret;
+-            }
+-            cryptoCount ++;
+-
+-        }while(ret != SGX_SUCCESS);
+-
+-        // printf("\n[ENCLAVE] Data %d:\n", j+1);
+-        // for(i = 0; i < dataSizes[j]; i++)
+-        // {
+-        //     printf("%c", g_data[data_loc + i]);
+-        // }
+-
+-        /* Read meta data */
+-        i = data_loc;
+-
+-        for(len = 0; g_data[i + len] != ' '; len++);
+-        N = (int)s2dou(&g_data[i], len);
+-        i += len + 1;
+-
+-        for(len = 0; g_data[i + len] != ' '; len++);
+-        K = (int)s2dou(&g_data[i], len);
+-        i += len + 1;
+-
+-        for(len = 0; g_data[i + len] != ' '; len++);
+-        C = (int)s2dou(&g_data[i], len);
+-
+-        printf("\n[ENCLAVE] Datafile %d's dimension: N = %d, K = %d, C = %d\n", j, N, K, C);
+-
+-        N_sum += N;
+-        data_loc += dataSizes[j];
+-        mac_loc  += macSizes[j];
+-    }
+-
+-    printf("\n[ENCLAVE] Merged Data's dimension: N = %d, K = %d, C = %d\n\n", N_sum, K, C);
+-    
+-
+-
+-    // The result
+-    int sum = 0;
+-    for(i = 0;i < data_size;i++)
+-    {
+-        sum += g_data[i] - 48;
+-    }
+-    printf("\n[ENCLAVE] The result is: %d.\n", sum);
+-
+-    *result = sum;
+-
+-    /* Generate a 16-Byte random key to encrypt the result */
+-    sgx_read_rand(K_result, sizeof(K_result));
+-
+-    /* Encrypt the result with K_result */
+-    ret = sgx_rijndael128GCM_encrypt((const sgx_ec_key_128bit_t*) K_result,
+-                                    result,
+-                                    result_size,
+-                                    p_result_encrypted,
+-                                    aes_gcm_iv,
+-                                    12,
+-                                    NULL,
+-                                    0,
+-                                    (sgx_aes_gcm_128bit_tag_t*) p_result_gcm_mac);
+-
+-
+-    /* Compute K_result_hash and C_result_hash */
+-    char K_result_string[32], C_result_string[result_size*2];
+-    u_array2c_array(K_result_string, K_result, sizeof(K_result));
+-    u_array2c_array(C_result_string, p_result_encrypted, sizeof(p_result_encrypted));
+-    Keccak keccak1, keccak2;
+-    K_result_hash = keccak1(K_result_string);
+-    C_result_hash = keccak2(C_result_string);
+-
+-    return ret;
+-}
+-
++#include "t1_core.inc"
+ 
+ /*
+ This ECALL function trains an SVM classifier
+@@ -634,6 +406,8 @@
+     uint32_t result_size,
+     uint8_t *p_result_gcm_mac)
+ {
++    return SGX_ERROR_FEATURE_NOT_SUPPORTED; // Only the validated T1 adapter is enabled.
++
+     sgx_status_t ret = SGX_SUCCESS;
+     uint8_t aes_gcm_iv[12] = {0};
+     uint8_t g_data[data_size];
+@@ -666,10 +440,10 @@
+ 
+         }while(ret != SGX_SUCCESS);
+ 
+-        // printf("\n[ENCLAVE] Data %d:\n", j+1);
++        // pg_enclave_log("\n[ENCLAVE] Data %d:\n", j+1);
+         // for(i = 0; i < dataSizes[j]; i++)
+         // {
+-        //     printf("%c", g_data[data_loc + i]);
++        //     pg_enclave_log("%c", g_data[data_loc + i]);
+         // }
+ 
+         /* Read meta data */
+@@ -686,14 +460,14 @@
+         for(len = 0; g_data[i + len] != ' '; len++);
+         C = (int)s2dou(&g_data[i], len);
+ 
+-        printf("\n[ENCLAVE] Datafile %d's dimension: N = %d, K = %d, C = %d\n", j, N, K, C);
++        pg_enclave_log("\n[ENCLAVE] Datafile %d's dimension: N = %d, K = %d, C = %d\n", j, N, K, C);
+ 
+         N_sum += N;
+         data_loc += dataSizes[j];
+         mac_loc  += macSizes[j];
+     }
+ 
+-    printf("\n[ENCLAVE] Merged Data's dimension: N = %d, K = %d, C = %d\n\n", N_sum, K, C);
++    pg_enclave_log("\n[ENCLAVE] Merged Data's dimension: N = %d, K = %d, C = %d\n\n", N_sum, K, C);
+ 
+     /* Get the problem */
+     read_svm_problem_from_plaintext(g_data, data_size, N_sum, K, C);
+@@ -721,7 +495,7 @@
+     error_msg = svm_check_parameter(&prob, &param);
+     if(error_msg)
+     {
+-        printf("[ENCLAVE] ERROR: %s\n",error_msg);
++        pg_enclave_log("[ENCLAVE] ERROR: %s\n",error_msg);
+         return SGX_ERROR_UNEXPECTED;
+     }
+ 
+@@ -779,6 +553,8 @@
+     uint32_t result_size,
+     uint8_t *p_result_gcm_mac)
+ {
++    return SGX_ERROR_FEATURE_NOT_SUPPORTED; // Only the validated T1 adapter is enabled.
++
+     sgx_status_t ret = SGX_SUCCESS;
+     uint8_t aes_gcm_iv[12] = {0};
+     uint8_t g_data[data_size];
+@@ -789,7 +565,7 @@
+ 
+     uint32_t data_loc = 0, mac_loc = 0; 
+ 
+-    // printf("asdasd\n");
++    // pg_enclave_log("asdasd\n");
+ 
+     /* Decrypt all data files */
+     for(j = 0; j < data_num; j++)
+@@ -808,17 +584,17 @@
+             
+             if(cryptoCount >= 20)
+             {
+-                printf("\n[ENCLAVE] Decryption failed.\n");
++                pg_enclave_log("\n[ENCLAVE] Decryption failed.\n");
+                 return ret;
+             }
+             cryptoCount ++;
+ 
+         }while(ret != SGX_SUCCESS);
+ 
+-        printf("\n[ENCLAVE] Data %d:\n", j+1);
++        pg_enclave_log("\n[ENCLAVE] Data %d:\n", j+1);
+         for(i = 0; i < dataSizes[j]; i++)
+         {
+-            printf("%c", g_data[data_loc + i]);
++            pg_enclave_log("%c", g_data[data_loc + i]);
+         }
+ 
+         /* Read meta data */
+@@ -835,19 +611,19 @@
+         for(len = 0; g_data[i + len] != ' '; len++);
+         C = (int)s2dou(&g_data[i], len);
+ 
+-        printf("\n[ENCLAVE] Data file %d's dimension: N = %d, K = %d, C = %d", j+1, N, K, C);
++        pg_enclave_log("\n[ENCLAVE] Data file %d's dimension: N = %d, K = %d, C = %d", j+1, N, K, C);
+ 
+         N_sum += N;
+         data_loc += dataSizes[j];
+         mac_loc  += macSizes[j];
+     }
+ 
+-    printf("\n[ENCLAVE] Merged Data's dimension: N = %d, K = %d, C = %d\n\n", N_sum, K, C);
+-
+-    // printf("\n[ENCLAVE] DataOwner's data are:\n");
++    pg_enclave_log("\n[ENCLAVE] Merged Data's dimension: N = %d, K = %d, C = %d\n\n", N_sum, K, C);
++
++    // pg_enclave_log("\n[ENCLAVE] DataOwner's data are:\n");
+     // for(i = 0;i < data_size;i++)
+     // {
+-    //     printf("%c", g_data[i]);
++    //     pg_enclave_log("%c", g_data[i]);
+     // }
+ 
+     /* Assign space for data points */
+@@ -858,12 +634,12 @@
+ 
+     // for(i = 0; i < N_sum; i++)
+     // {
+-    //     printf("%d: [%f %f] ", i+1, data->output[i][0], data->output[i][1]);
++    //     pg_enclave_log("%d: [%f %f] ", i+1, data->output[i][0], data->output[i][1]);
+     //     for(j = 0; j < 14; j++)
+     //     {
+-    //         printf("%f ", data->input[i][j]);
++    //         pg_enclave_log("%f ", data->input[i][j]);
+     //     }
+-    //     printf("\n");
++    //     pg_enclave_log("\n");
+     // }
+ 
+     /* Model training parameters */
+@@ -914,83 +690,6 @@
+ /*
+ This ECALL function perform an SVM training process
+ */
+-sgx_status_t ECALL_get_K_result_hashes(
+-    sgx_ra_context_t context,
+-    uint8_t *p_K_result_en,
+-    uint8_t *p_K_result_gcm_mac,
+-    uint8_t *p_K_result_hash_en_DC,
+-    uint8_t *p_K_result_hash_DC_gcm_mac,
+-    uint8_t *p_C_result_hash_en_DC,
+-    uint8_t *p_C_result_hash_DC_gcm_mac)
+-{
+-    int i;
+-    sgx_status_t ret = SGX_SUCCESS;
+-    uint8_t aes_gcm_iv[12] = {0};
+-
+-    printf("\n[ENCLAVE] K_result:\n");
+-    for(i = 0; i < 16; i++)
+-    {
+-        printf("%02x", K_result[i]);
+-    }
+-
+-    printf("\n[ENCLAVE] K_result_hash:\n");
+-    for(i = 0; i < 64; i++)
+-    {
+-        printf("%c", K_result_hash[i]);
+-    }
+-
+-    printf("\n[ENCLAVE] C_result_hash:\n");
+-    for(i = 0; i < 64; i++)
+-    {
+-        printf("%c", C_result_hash[i]);
+-    }
+-
+-    printf("\n\n");
+-
+-    /* Convert string typed hashes to uint8_t* */
+-    uint8_t K_result_hash_uint8[32], C_result_hash_uint8[32];
+-    string2u_array(K_result_hash_uint8, K_result_hash, 32);
+-    string2u_array(C_result_hash_uint8, C_result_hash, 32);
+-
+-    /* Encrypt K_result with sk_key_DO */
+-    ret = sgx_rijndael128GCM_encrypt((const sgx_ec_key_128bit_t*) sk_key_DO,
+-                                    K_result,
+-                                    16,
+-                                    p_K_result_en,
+-                                    aes_gcm_iv,
+-                                    12,
+-                                    NULL,
+-                                    0,
+-                                    (sgx_aes_gcm_128bit_tag_t*) p_K_result_gcm_mac);
+-
+-    /* Encrypt K_result_hash with sk_key_DC */
+-    ret = sgx_rijndael128GCM_encrypt((const sgx_ec_key_128bit_t*) sk_key_DC,
+-                                    K_result_hash_uint8,
+-                                    32,
+-                                    p_K_result_hash_en_DC,
+-                                    aes_gcm_iv,
+-                                    12,
+-                                    NULL,
+-                                    0,
+-                                    (sgx_aes_gcm_128bit_tag_t*) p_K_result_hash_DC_gcm_mac);
+-
+-    /* Encrypt C_result_hash with sk_key_DC */
+-    ret = sgx_rijndael128GCM_encrypt((const sgx_ec_key_128bit_t*) sk_key_DC,
+-                                    C_result_hash_uint8,
+-                                    32,
+-                                    p_C_result_hash_en_DC,
+-                                    aes_gcm_iv,
+-                                    12,
+-                                    NULL,
+-                                    0,
+-                                    (sgx_aes_gcm_128bit_tag_t*) p_C_result_hash_DC_gcm_mac);
+-}
+-
+-
+-
+-
+-
+-
+ /* Read the svm data and write them into prob*/
+ // The format of the plaintext needs to be strictly conformed:
+ // 1. The 1st line spedifies the metadata: 'n_datapoints n_features '
+@@ -1018,7 +717,7 @@
+     prob.l = N;
+ 
+ 
+-    // printf("\n[ENCLAVE] Training data dimension: N = %d, K = %d, C = %d\n", prob.l, K, C);
++    // pg_enclave_log("\n[ENCLAVE] Training data dimension: N = %d, K = %d, C = %d\n", prob.l, K, C);
+ 
+     /* Assign space for data points */
+     prob.y = Malloc(double, prob.l);
+@@ -1111,14 +810,14 @@
+         /* Read label */
+         for(len = 0; p_data[i + len] != ' '; len++);
+         tmpLabel = (int) s2dou(&p_data[i], len);
+-        // printf("tmpLabel = %d", tmpLabel);
++        // pg_enclave_log("tmpLabel = %d", tmpLabel);
+         data->output[j][0] = 0;
+         data->output[j][1] = 0;
+         data->output[j][(tmpLabel+1)/2] = 1; // Assign 1 to the labeled class
+         // data->output[j][0] = 1; // Assign 1 to the labeled class
+         i += len + 1;
+ 
+-        // printf("\n[%f %f] ", data->output[j][0], data->output[j][1]);
++        // pg_enclave_log("\n[%f %f] ", data->output[j][0], data->output[j][1]);
+ 
+ 
+         /* Read the values of the particular data point led by the previous label */
+--- a/CEE/isv_enclave/isv_enclave.edl
++++ b/CEE/isv_enclave/isv_enclave.edl
+@@ -69,7 +69,8 @@
+                                             uint32_t mac_size,
+                                             [out,count=result_size] uint8_t *p_result_encrypted,
+                                             uint32_t result_size,
+-                                            [out,size=16] uint8_t *p_result_gcm_mac);
++                                            [out,size=16] uint8_t *p_result_gcm_mac,
++                                            [out] uint32_t *p_result_length);
+ 
+         public sgx_status_t ECALL_compute_task2(
+                                             sgx_ra_context_t context,
+@@ -104,7 +105,10 @@
+                                             [out,size=32] uint8_t *p_K_result_hash_en_DC,
+                                             [out,size=16] uint8_t *p_K_result_hash_DC_gcm_mac,
+                                             [out,size=32] uint8_t *p_C_result_hash_en_DC,
+-                                            [out,size=16] uint8_t *p_C_result_hash_DC_gcm_mac);
++                                            [out,size=16] uint8_t *p_C_result_hash_DC_gcm_mac,
++                                            [out,size=12] uint8_t *p_key_nonce,
++                                            [out,size=12] uint8_t *p_key_hash_nonce,
++                                            [out,size=12] uint8_t *p_cipher_hash_nonce);
+ 
+     };
+ 
+--- a/CEE/isv_enclave/enclave_utilities.cpp
++++ b/CEE/isv_enclave/enclave_utilities.cpp
+@@ -10,16 +10,12 @@
+  * printf: 
+  *   Invokes OCALL to display the enclave buffer to the terminal.
+  */
+-void printf(const char *fmt, ...)
++// Trusted diagnostic logger, intentionally distinct from the C stdio prototype.
++// Selected T1 ECALLs report errors by status and never print secrets.
++void pg_enclave_log(const char *fmt, ...)
+ {
+-    char buf[BUFSIZ] = {'\0'};
+-    va_list ap;
+-    va_start(ap, fmt);
+-    vsnprintf(buf, BUFSIZ, fmt, ap);
+-    va_end(ap);
+-    OCALL_print_string(buf);
++    (void)fmt;
+ }
+-
+ 
+ /* string to double converter */
+ // string has to begin with either '+', '-' or '0' ~ '9'
+@@ -48,7 +44,7 @@
+     }
+ 
+     if(len - has_sign > 11){
+-        printf("String too long: %s\n", str);
++        pg_enclave_log("String too long: %s\n", str);
+         return 0;
+     }
+ 
+@@ -59,11 +55,11 @@
+ /* Convert uint8_t array to char array like this: {0x12, 0xde} ==> "12de" */
+ void u_array2c_array(char *c_arr, uint8_t *u_arr, int len)
+ {
+-    int i;
+-    for(i = 0; i < len; i++)
+-    {
+-        sprintf_s(&c_arr[2*i], 4, "%02x", u_arr[i]);
++    static const char digits[] = "0123456789abcdef";
++    for(int i=0;i<len;++i) {
++        c_arr[2*i]=digits[u_arr[i]>>4]; c_arr[2*i+1]=digits[u_arr[i]&15];
+     }
++
+ }
+ 
+ 
+--- a/CEE/isv_enclave/include/enclave_utilities.h
++++ b/CEE/isv_enclave/include/enclave_utilities.h
+@@ -12,7 +12,7 @@
+ extern "C" {
+ #endif
+ 
+-void printf(const char *fmt, ...);
++void pg_enclave_log(const char *fmt, ...);
+ 
+ double s2dou(uint8_t* str, int len);
+ 
+--- a/CEE/isv_enclave/enclave_fann.cpp
++++ b/CEE/isv_enclave/enclave_fann.cpp
+@@ -36,7 +36,7 @@
+     if(layers == NULL)
+     {
+         // fann_error(NULL, FANN_E_CANT_ALLOCATE_MEM);
+-        printf("Error: fann_create_standard(): FANN_E_CANT_ALLOCATE_MEM\n");
++        pg_enclave_log("Error: fann_create_standard(): FANN_E_CANT_ALLOCATE_MEM\n");
+         return NULL;
+     }
+ 
+@@ -55,7 +55,7 @@
+     if(!status)
+     {
+         // fann_error(NULL, FANN_E_CANT_ALLOCATE_MEM);
+-        printf("Error: fann_create_standard(): FANN_E_CANT_ALLOCATE_MEM\n");
++        pg_enclave_log("Error: fann_create_standard(): FANN_E_CANT_ALLOCATE_MEM\n");
+         free(layers);
+         return NULL;
+     }
+@@ -86,7 +86,7 @@
+     if(layers == NULL)
+     {
+         // fann_error(NULL, FANN_E_CANT_ALLOCATE_MEM);
+-        printf("Error: fann_create_sparse(): FANN_E_CANT_ALLOCATE_MEM\n");
++        pg_enclave_log("Error: fann_create_sparse(): FANN_E_CANT_ALLOCATE_MEM\n");
+         return NULL;
+     }
+ 
+@@ -104,7 +104,7 @@
+     if(!status)
+     {
+         // fann_error(NULL, FANN_E_CANT_ALLOCATE_MEM);
+-        printf("Error: fann_create_sparse(): FANN_E_CANT_ALLOCATE_MEM\n");
++        pg_enclave_log("Error: fann_create_sparse(): FANN_E_CANT_ALLOCATE_MEM\n");
+         free(layers);
+         return NULL;
+     }
+@@ -145,7 +145,7 @@
+     if(ann == NULL)
+     {
+         // fann_error(NULL, FANN_E_CANT_ALLOCATE_MEM);
+-        printf("Error: fann_create_sparse_array(): FANN_E_CANT_ALLOCATE_MEM\n");
++        pg_enclave_log("Error: fann_create_sparse_array(): FANN_E_CANT_ALLOCATE_MEM\n");
+         return NULL;
+     }
+ 
+@@ -178,9 +178,9 @@
+     }
+ 
+ #ifdef DEBUG
+-    printf("creating network with connection rate %f\n", connection_rate);
+-    printf("input\n");
+-    printf("  layer       : %d neurons, 1 bias\n",
++    pg_enclave_log("creating network with connection rate %f\n", connection_rate);
++    pg_enclave_log("input\n");
++    pg_enclave_log("  layer       : %d neurons, 1 bias\n",
+            (int)(ann->first_layer->last_neuron - ann->first_layer->first_neuron - 1));
+ #endif
+ 
+@@ -269,7 +269,7 @@
+ #endif
+             prev_layer = layer_it;
+ #ifdef DEBUG
+-            printf("  layer       : %d neurons, 1 bias\n", prev_layer_size - 1);
++            pg_enclave_log("  layer       : %d neurons, 1 bias\n", prev_layer_size - 1);
+ #endif
+         }
+     }
+@@ -369,7 +369,7 @@
+             }
+ 
+ #ifdef DEBUG
+-            printf("  layer       : %d neurons, 1 bias\n", num_neurons_out);
++            pg_enclave_log("  layer       : %d neurons, 1 bias\n", num_neurons_out);
+ #endif
+         }
+ 
+@@ -379,7 +379,7 @@
+     }
+ 
+ #ifdef DEBUG
+-    printf("output\n");
++    pg_enclave_log("output\n");
+ #endif
+ 
+     return ann;
+@@ -398,7 +398,7 @@
+     if(layers == NULL)
+     {
+         // fann_error(NULL, FANN_E_CANT_ALLOCATE_MEM);
+-        printf("Error: fann_create_shortcut(): FANN_E_CANT_ALLOCATE_MEM\n");
++        pg_enclave_log("Error: fann_create_shortcut(): FANN_E_CANT_ALLOCATE_MEM\n");
+         return NULL;
+     }
+ 
+@@ -416,7 +416,7 @@
+     if(!status)
+     {
+         // fann_error(NULL, FANN_E_CANT_ALLOCATE_MEM);
+-        printf("Error: fann_create_shortcut(): FANN_E_CANT_ALLOCATE_MEM\n");
++        pg_enclave_log("Error: fann_create_shortcut(): FANN_E_CANT_ALLOCATE_MEM\n");
+         free(layers);
+         return NULL;
+     }
+@@ -447,7 +447,7 @@
+     if(ann == NULL)
+     {
+         // fann_error(NULL, FANN_E_CANT_ALLOCATE_MEM);
+-        printf("Error: fann_allocate_structure(): FANN_E_CANT_ALLOCATE_MEM\n");
++        pg_enclave_log("Error: fann_allocate_structure(): FANN_E_CANT_ALLOCATE_MEM\n");
+         return NULL;
+     }
+ 
+@@ -487,9 +487,9 @@
+     }
+ 
+ #ifdef DEBUG
+-    printf("creating fully shortcut connected network.\n");
+-    printf("input\n");
+-    printf("  layer       : %d neurons, 1 bias\n",
++    pg_enclave_log("creating fully shortcut connected network.\n");
++    pg_enclave_log("input\n");
++    pg_enclave_log("  layer       : %d neurons, 1 bias\n",
+            (int)(ann->first_layer->last_neuron - ann->first_layer->first_neuron - 1));
+ #endif
+ 
+@@ -515,7 +515,7 @@
+         }
+ 
+ #ifdef DEBUG
+-        printf("  layer       : %d neurons, 0 bias\n", num_neurons_out);
++        pg_enclave_log("  layer       : %d neurons, 0 bias\n", num_neurons_out);
+ #endif
+         /* used in the next run of the loop */
+         num_neurons_in += num_neurons_out;
+@@ -553,7 +553,7 @@
+     }
+ 
+ #ifdef DEBUG
+-    printf("output\n");
++    pg_enclave_log("output\n");
+ #endif
+ 
+     return ann;
+@@ -593,8 +593,7 @@
+ #ifdef FIXEDFANN
+         if(fann_abs(input[i]) > multiplier)
+         {
+-            printf
+-                ("Warning input number %d is out of range -%d - %d with value %d, integer overflow may occur.\n",
++            pg_enclave_log("Warning input number %d is out of range -%d - %d with value %d, integer overflow may occur.\n",
+                  i, multiplier, multiplier, input[i]);
+         }
+ #endif
+@@ -669,7 +668,7 @@
+ 
+                 /*
+                  * for(i = 0;i != num_connections; i++){
+-                 * printf("%f += %f*%f, ", neuron_sum, weights[i], neurons[i].value);
++                 * pg_enclave_log("%f += %f*%f, ", neuron_sum, weights[i], neurons[i].value);
+                  * neuron_sum += fann_mult(weights[i], neurons[i].value);
+                  * }
+                  */
+@@ -880,7 +879,7 @@
+     copy = fann_allocate_structure(num_layers);
+     if (copy==NULL) {
+         // fann_error((struct fann_error*)orig, FANN_E_CANT_ALLOCATE_MEM);
+-        printf("Error: fann_copy(): FANN_E_CANT_ALLOCATE_MEM\n");
++        pg_enclave_log("Error: fann_copy(): FANN_E_CANT_ALLOCATE_MEM\n");
+         return NULL;
+     }
+     copy->errno_f = orig->errno_f;
+@@ -928,7 +927,7 @@
+     if(copy->cascade_activation_functions == NULL)
+     {
+         // fann_error((struct fann_error*)orig, FANN_E_CANT_ALLOCATE_MEM);
+-        printf("Error: fann_copy(): FANN_E_CANT_ALLOCATE_MEM\n");
++        pg_enclave_log("Error: fann_copy(): FANN_E_CANT_ALLOCATE_MEM\n");
+         fann_destroy(copy);
+         return NULL;
+     }
+@@ -941,7 +940,7 @@
+     if(copy->cascade_activation_steepnesses == NULL)
+     {
+         // fann_error((struct fann_error*)orig, FANN_E_CANT_ALLOCATE_MEM);
+-        printf("Error: fann_copy(): FANN_E_CANT_ALLOCATE_MEM\n");
++        pg_enclave_log("Error: fann_copy(): FANN_E_CANT_ALLOCATE_MEM\n");
+         fann_destroy(copy);
+         return NULL;
+     }
+@@ -961,7 +960,7 @@
+         if(copy->cascade_candidate_scores == NULL)
+         {
+             // fann_error((struct fann_error *) orig, FANN_E_CANT_ALLOCATE_MEM);
+-            printf("Error: fann_copy(): FANN_E_CANT_ALLOCATE_MEM\n");
++            pg_enclave_log("Error: fann_copy(): FANN_E_CANT_ALLOCATE_MEM\n");
+             fann_destroy(copy);
+             return NULL;
+         }
+@@ -1063,7 +1062,7 @@
+         if (copy->train_slopes == NULL)
+         {
+             // fann_error((struct fann_error *) orig, FANN_E_CANT_ALLOCATE_MEM);
+-            printf("Error: fann_copy(): FANN_E_CANT_ALLOCATE_MEM\n");
++            pg_enclave_log("Error: fann_copy(): FANN_E_CANT_ALLOCATE_MEM\n");
+             fann_destroy(copy);
+             return NULL;
+         }
+@@ -1076,7 +1075,7 @@
+         if (copy->prev_steps == NULL)
+         {
+             // fann_error((struct fann_error *) orig, FANN_E_CANT_ALLOCATE_MEM);
+-            printf("Error: fann_copy(): FANN_E_CANT_ALLOCATE_MEM\n");
++            pg_enclave_log("Error: fann_copy(): FANN_E_CANT_ALLOCATE_MEM\n");
+             fann_destroy(copy);
+             return NULL;
+         }
+@@ -1089,7 +1088,7 @@
+         if (copy->prev_train_slopes == NULL)
+         {
+             // fann_error((struct fann_error *) orig, FANN_E_CANT_ALLOCATE_MEM);
+-            printf("Error: fann_copy(): FANN_E_CANT_ALLOCATE_MEM\n");
++            pg_enclave_log("Error: fann_copy(): FANN_E_CANT_ALLOCATE_MEM\n");
+             fann_destroy(copy);
+             return NULL;
+         }
+@@ -1102,7 +1101,7 @@
+         if(copy->prev_weights_deltas == NULL)
+         {
+             // fann_error((struct fann_error *) orig, FANN_E_CANT_ALLOCATE_MEM);
+-            printf("Error: fann_copy(): FANN_E_CANT_ALLOCATE_MEM\n");
++            pg_enclave_log("Error: fann_copy(): FANN_E_CANT_ALLOCATE_MEM\n");
+             fann_destroy(copy);
+             return NULL;
+         }
+@@ -1125,17 +1124,17 @@
+     if(neurons == NULL)
+     {
+         // fann_error(NULL, FANN_E_CANT_ALLOCATE_MEM);
+-        printf("Error: fann_print_connections(): FANN_E_CANT_ALLOCATE_MEM\n");
++        pg_enclave_log("Error: fann_print_connections(): FANN_E_CANT_ALLOCATE_MEM\n");
+         return;
+     }
+     neurons[num_neurons] = 0;
+ 
+-    printf("Layer / Neuron ");
++    pg_enclave_log("Layer / Neuron ");
+     for(i = 0; i < num_neurons; i++)
+     {
+-        printf("%d", i % 10);
+-    }
+-    printf("\n");
++        pg_enclave_log("%d", i % 10);
++    }
++    pg_enclave_log("\n");
+ 
+     for(layer_it = ann->first_layer + 1; layer_it != ann->last_layer; layer_it++)
+     {
+@@ -1168,7 +1167,7 @@
+                     neurons[ann->connections[i] - ann->first_layer->first_neuron] = (char)('A' + value);
+                 }
+             }
+-            printf("L %3d / N %4d %s\n", (int)(layer_it - ann->first_layer),
++            pg_enclave_log("L %3d / N %4d %s\n", (int)(layer_it - ann->first_layer),
+                    (int)(neuron_it - ann->first_layer->first_neuron), neurons);
+         }
+     }
+@@ -1211,7 +1210,7 @@
+                                                                          smallest_inp));
+ 
+ #ifdef DEBUG
+-    printf("Initializing weights with scale factor %f\n", scale_factor);
++    pg_enclave_log("Initializing weights with scale factor %f\n", scale_factor);
+ #endif
+     bias_neuron = ann->first_layer->last_neuron - 1;
+     for(layer_it = ann->first_layer + 1; layer_it != ann->last_layer; layer_it++)
+@@ -1264,64 +1263,64 @@
+     unsigned int i;
+ #endif
+ 
+-    printf("Input layer                          :%4d neurons, 1 bias\n", ann->num_input);
++    pg_enclave_log("Input layer                          :%4d neurons, 1 bias\n", ann->num_input);
+     for(layer_it = ann->first_layer + 1; layer_it != ann->last_layer - 1; layer_it++)
+     {
+         if(ann->network_type == FANN_NETTYPE_SHORTCUT)
+         {
+-            printf("  Hidden layer                       :%4d neurons, 0 bias\n",
++            pg_enclave_log("  Hidden layer                       :%4d neurons, 0 bias\n",
+                    (int)(layer_it->last_neuron - layer_it->first_neuron));
+         }
+         else
+         {
+-            printf("  Hidden layer                       :%4d neurons, 1 bias\n",
++            pg_enclave_log("  Hidden layer                       :%4d neurons, 1 bias\n",
+                    (int)(layer_it->last_neuron - layer_it->first_neuron - 1));
+         }
+     }
+-    printf("Output layer                         :%4d neurons\n", ann->num_output);
+-    printf("Total neurons and biases             :%4d\n", fann_get_total_neurons(ann));
+-    printf("Total connections                    :%4d\n", ann->total_connections);
+-    printf("Connection rate                      :%8.3f\n", ann->connection_rate);
+-    printf("Network type                         :   %s\n", FANN_NETTYPE_NAMES[ann->network_type]);
++    pg_enclave_log("Output layer                         :%4d neurons\n", ann->num_output);
++    pg_enclave_log("Total neurons and biases             :%4d\n", fann_get_total_neurons(ann));
++    pg_enclave_log("Total connections                    :%4d\n", ann->total_connections);
++    pg_enclave_log("Connection rate                      :%8.3f\n", ann->connection_rate);
++    pg_enclave_log("Network type                         :   %s\n", FANN_NETTYPE_NAMES[ann->network_type]);
+ #ifdef FIXEDFANN
+-    printf("Decimal point                        :%4d\n", ann->decimal_point);
+-    printf("Multiplier                           :%4d\n", ann->multiplier);
++    pg_enclave_log("Decimal point                        :%4d\n", ann->decimal_point);
++    pg_enclave_log("Multiplier                           :%4d\n", ann->multiplier);
+ #else
+-    printf("Training algorithm                   :   %s\n", FANN_TRAIN_NAMES[ann->training_algorithm]);
+-    printf("Training error function              :   %s\n", FANN_ERRORFUNC_NAMES[ann->train_error_function]);
+-    printf("Training stop function               :   %s\n", FANN_STOPFUNC_NAMES[ann->train_stop_function]);
++    pg_enclave_log("Training algorithm                   :   %s\n", FANN_TRAIN_NAMES[ann->training_algorithm]);
++    pg_enclave_log("Training error function              :   %s\n", FANN_ERRORFUNC_NAMES[ann->train_error_function]);
++    pg_enclave_log("Training stop function               :   %s\n", FANN_STOPFUNC_NAMES[ann->train_stop_function]);
+ #endif
+ #ifdef FIXEDFANN
+-    printf("Bit fail limit                       :%4d\n", ann->bit_fail_limit);
++    pg_enclave_log("Bit fail limit                       :%4d\n", ann->bit_fail_limit);
+ #else
+-    printf("Bit fail limit                       :%8.3f\n", ann->bit_fail_limit);
+-    printf("Learning rate                        :%8.3f\n", ann->learning_rate);
+-    printf("Learning momentum                    :%8.3f\n", ann->learning_momentum);
+-    printf("Quickprop decay                      :%11.6f\n", ann->quickprop_decay);
+-    printf("Quickprop mu                         :%8.3f\n", ann->quickprop_mu);
+-    printf("RPROP increase factor                :%8.3f\n", ann->rprop_increase_factor);
+-    printf("RPROP decrease factor                :%8.3f\n", ann->rprop_decrease_factor);
+-    printf("RPROP delta min                      :%8.3f\n", ann->rprop_delta_min);
+-    printf("RPROP delta max                      :%8.3f\n", ann->rprop_delta_max);
+-    printf("Cascade output change fraction       :%11.6f\n", ann->cascade_output_change_fraction);
+-    printf("Cascade candidate change fraction    :%11.6f\n", ann->cascade_candidate_change_fraction);
+-    printf("Cascade output stagnation epochs     :%4d\n", ann->cascade_output_stagnation_epochs);
+-    printf("Cascade candidate stagnation epochs  :%4d\n", ann->cascade_candidate_stagnation_epochs);
+-    printf("Cascade max output epochs            :%4d\n", ann->cascade_max_out_epochs);
+-    printf("Cascade min output epochs            :%4d\n", ann->cascade_min_out_epochs);
+-    printf("Cascade max candidate epochs         :%4d\n", ann->cascade_max_cand_epochs);
+-    printf("Cascade min candidate epochs         :%4d\n", ann->cascade_min_cand_epochs);
+-    printf("Cascade weight multiplier            :%8.3f\n", ann->cascade_weight_multiplier);
+-    printf("Cascade candidate limit              :%8.3f\n", ann->cascade_candidate_limit);
++    pg_enclave_log("Bit fail limit                       :%8.3f\n", ann->bit_fail_limit);
++    pg_enclave_log("Learning rate                        :%8.3f\n", ann->learning_rate);
++    pg_enclave_log("Learning momentum                    :%8.3f\n", ann->learning_momentum);
++    pg_enclave_log("Quickprop decay                      :%11.6f\n", ann->quickprop_decay);
++    pg_enclave_log("Quickprop mu                         :%8.3f\n", ann->quickprop_mu);
++    pg_enclave_log("RPROP increase factor                :%8.3f\n", ann->rprop_increase_factor);
++    pg_enclave_log("RPROP decrease factor                :%8.3f\n", ann->rprop_decrease_factor);
++    pg_enclave_log("RPROP delta min                      :%8.3f\n", ann->rprop_delta_min);
++    pg_enclave_log("RPROP delta max                      :%8.3f\n", ann->rprop_delta_max);
++    pg_enclave_log("Cascade output change fraction       :%11.6f\n", ann->cascade_output_change_fraction);
++    pg_enclave_log("Cascade candidate change fraction    :%11.6f\n", ann->cascade_candidate_change_fraction);
++    pg_enclave_log("Cascade output stagnation epochs     :%4d\n", ann->cascade_output_stagnation_epochs);
++    pg_enclave_log("Cascade candidate stagnation epochs  :%4d\n", ann->cascade_candidate_stagnation_epochs);
++    pg_enclave_log("Cascade max output epochs            :%4d\n", ann->cascade_max_out_epochs);
++    pg_enclave_log("Cascade min output epochs            :%4d\n", ann->cascade_min_out_epochs);
++    pg_enclave_log("Cascade max candidate epochs         :%4d\n", ann->cascade_max_cand_epochs);
++    pg_enclave_log("Cascade min candidate epochs         :%4d\n", ann->cascade_min_cand_epochs);
++    pg_enclave_log("Cascade weight multiplier            :%8.3f\n", ann->cascade_weight_multiplier);
++    pg_enclave_log("Cascade candidate limit              :%8.3f\n", ann->cascade_candidate_limit);
+     for(i = 0; i < ann->cascade_activation_functions_count; i++)
+-        printf("Cascade activation functions[%d]      :   %s\n", i,
++        pg_enclave_log("Cascade activation functions[%d]      :   %s\n", i,
+             FANN_ACTIVATIONFUNC_NAMES[ann->cascade_activation_functions[i]]);
+     for(i = 0; i < ann->cascade_activation_steepnesses_count; i++)
+-        printf("Cascade activation steepnesses[%d]    :%8.3f\n", i,
++        pg_enclave_log("Cascade activation steepnesses[%d]    :%8.3f\n", i,
+             ann->cascade_activation_steepnesses[i]);
+         
+-    printf("Cascade candidate groups             :%4d\n", ann->cascade_num_candidate_groups);
+-    printf("Cascade no. of candidates            :%4d\n", fann_get_cascade_num_candidates(ann));
++    pg_enclave_log("Cascade candidate groups             :%4d\n", ann->cascade_num_candidate_groups);
++    pg_enclave_log("Cascade no. of candidates            :%4d\n", fann_get_cascade_num_candidates(ann));
+     
+     /* TODO: dump scale parameters */
+ #endif
+@@ -1580,7 +1579,7 @@
+     if(num_layers < 2)
+     {
+ #ifdef DEBUG
+-        printf("less than 2 layers - ABORTING.\n");
++        pg_enclave_log("less than 2 layers - ABORTING.\n");
+ #endif
+         return NULL;
+     }
+@@ -1590,7 +1589,7 @@
+     if(ann == NULL)
+     {
+         // fann_error(NULL, FANN_E_CANT_ALLOCATE_MEM);
+-        printf("Error: fann_allocate_structure(): FANN_E_CANT_ALLOCATE_MEM\n");
++        pg_enclave_log("Error: fann_allocate_structure(): FANN_E_CANT_ALLOCATE_MEM\n");
+         return NULL;
+     }
+ 
+@@ -1652,7 +1651,7 @@
+     if(ann->cascade_activation_functions == NULL)
+     {
+         // fann_error(NULL, FANN_E_CANT_ALLOCATE_MEM);
+-        printf("Error: fann_allocate_structure(): FANN_E_CANT_ALLOCATE_MEM\n");
++        pg_enclave_log("Error: fann_allocate_structure(): FANN_E_CANT_ALLOCATE_MEM\n");
+         free(ann);
+         return NULL;
+     }
+@@ -1674,7 +1673,7 @@
+     {
+         fann_safe_free(ann->cascade_activation_functions);
+         // fann_error(NULL, FANN_E_CANT_ALLOCATE_MEM);
+-        printf("Error: fann_allocate_structure(): FANN_E_CANT_ALLOCATE_MEM\n");
++        pg_enclave_log("Error: fann_allocate_structure(): FANN_E_CANT_ALLOCATE_MEM\n");
+         free(ann);
+         return NULL;
+     }
+@@ -1716,7 +1715,7 @@
+     if(ann->first_layer == NULL)
+     {
+         // fann_error(NULL, FANN_E_CANT_ALLOCATE_MEM);
+-        printf("Error: fann_allocate_structure(): FANN_E_CANT_ALLOCATE_MEM\n");
++        pg_enclave_log("Error: fann_allocate_structure(): FANN_E_CANT_ALLOCATE_MEM\n");
+         free(ann);
+         return NULL;
+     }
+@@ -1741,7 +1740,7 @@
+             );                                                              \
+         if( ann->what##_##where == NULL )                                   \
+         {                                                                   \
+-            printf("Error: fann_allocate_scale(): FANN_E_CANT_ALLOCATE_MEM\n"); \
++            pg_enclave_log("Error: fann_allocate_scale(): FANN_E_CANT_ALLOCATE_MEM\n"); \
+             fann_destroy( ann );                                            \
+             return 1;                                                       \
+         }                                                                   \
+@@ -1779,7 +1778,7 @@
+     if(neurons == NULL)
+     {
+         // fann_error((struct fann_error *) ann, FANN_E_CANT_ALLOCATE_MEM);
+-        printf("Error: fann_allocate_neurons(): FANN_E_CANT_ALLOCATE_MEM\n");
++        pg_enclave_log("Error: fann_allocate_neurons(): FANN_E_CANT_ALLOCATE_MEM\n");
+         return;
+     }
+ 
+@@ -1795,7 +1794,7 @@
+     if(ann->output == NULL)
+     {
+         // fann_error((struct fann_error *) ann, FANN_E_CANT_ALLOCATE_MEM);
+-        printf("Error: fann_allocate_neurons(): FANN_E_CANT_ALLOCATE_MEM\n");
++        pg_enclave_log("Error: fann_allocate_neurons(): FANN_E_CANT_ALLOCATE_MEM\n");
+         return;
+     }
+ }
+@@ -1809,7 +1808,7 @@
+     if(ann->weights == NULL)
+     {
+         // fann_error((struct fann_error *) ann, FANN_E_CANT_ALLOCATE_MEM);
+-        printf("Error: fann_allocate_connections(): FANN_E_CANT_ALLOCATE_MEM\n");
++        pg_enclave_log("Error: fann_allocate_connections(): FANN_E_CANT_ALLOCATE_MEM\n");
+         return;
+     }
+     ann->total_connections_allocated = ann->total_connections;
+@@ -1823,7 +1822,7 @@
+     if(ann->connections == NULL)
+     {
+         // fann_error((struct fann_error *) ann, FANN_E_CANT_ALLOCATE_MEM);
+-        printf("Error: fann_allocate_connections(): FANN_E_CANT_ALLOCATE_MEM\n");
++        pg_enclave_log("Error: fann_allocate_connections(): FANN_E_CANT_ALLOCATE_MEM\n");
+         return;
+     }
+ }
+@@ -1872,7 +1871,7 @@
+ //     if(layer <= 0 || layer >= (ann->last_layer - ann->first_layer))
+ //     {
+ //         // fann_error((struct fann_error *) ann, FANN_E_INDEX_OUT_OF_BOUND, layer);
+-//         printf("Error: fann_get_layer(): FANN_E_CANT_ALLOCATE_MEM\n");
++//         pg_enclave_log("Error: fann_get_layer(): FANN_E_CANT_ALLOCATE_MEM\n");
+ //         return NULL;
+ //     }
+     
+@@ -1884,7 +1883,7 @@
+ //     if(neuron >= (layer->last_neuron - layer->first_neuron))
+ //     {
+ //         // fann_error((struct fann_error *) ann, FANN_E_INDEX_OUT_OF_BOUND, neuron);
+-//         printf("Error: fann_get_neuron_layer(): FANN_E_CANT_ALLOCATE_MEM\n");
++//         pg_enclave_log("Error: fann_get_neuron_layer(): FANN_E_CANT_ALLOCATE_MEM\n");
+ //         return NULL;    
+ //     }
+     
+@@ -2244,12 +2243,12 @@
+     int desired_error_reached;
+ 
+ #ifdef DEBUG
+-    printf("Training with %s\n", FANN_TRAIN_NAMES[ann->training_algorithm]);
++    pg_enclave_log("Training with %s\n", FANN_TRAIN_NAMES[ann->training_algorithm]);
+ #endif
+ 
+     if(epochs_between_reports && ann->callback == NULL)
+     {
+-        printf("Max epochs %8d. Desired error: %.10f.\n", max_epochs, desired_error);
++        pg_enclave_log("Max epochs %8d. Desired error: %.10f.\n", max_epochs, desired_error);
+     }
+ 
+     for(i = 1; i <= max_epochs; i++)
+@@ -2269,7 +2268,7 @@
+         {
+             if(ann->callback == NULL)
+             {
+-                printf("Epochs     %8d. Current error: %.10f. Bit fail %d.\n", i, error,
++                pg_enclave_log("Epochs     %8d. Current error: %.10f. Bit fail %d.\n", i, error,
+                        ann->num_bit_fail);
+             }
+             else if(((*ann->callback)(ann, data, max_epochs, epochs_between_reports, 
+@@ -2398,7 +2397,7 @@
+     old_span = old_max - old_min;
+     new_span = new_max - new_min;
+     factor = new_span / old_span;
+-    /*printf("max %f, min %f, factor %f\n", old_max, old_min, factor);*/
++    /*pg_enclave_log("max %f, min %f, factor %f\n", old_max, old_min, factor);*/
+ 
+     for(dat = 0; dat < num_data; dat++)
+     {
+@@ -2409,14 +2408,14 @@
+             {
+                 data[dat][elem] = new_min;
+                 /*
+-                 * printf("error %f < %f\n", temp, new_min); 
++                 * pg_enclave_log("error %f < %f\n", temp, new_min); 
+                  */
+             }
+             else if(temp > new_max)
+             {
+                 data[dat][elem] = new_max;
+                 /*
+-                 * printf("error %f > %f\n", temp, new_max); 
++                 * pg_enclave_log("error %f > %f\n", temp, new_max); 
+                  */
+             }
+             else
+@@ -2473,14 +2472,14 @@
+     if(dest == NULL)
+     {
+         // fann_error((struct fann_error*)data1, FANN_E_CANT_ALLOCATE_MEM);
+-        printf("Error: fann_merge_train_data(): FANN_E_CANT_ALLOCATE_MEM\n");
++        pg_enclave_log("Error: fann_merge_train_data(): FANN_E_CANT_ALLOCATE_MEM\n");
+         return NULL;
+     }
+ 
+     if((data1->num_input != data2->num_input) || (data1->num_output != data2->num_output))
+     {
+         // fann_error((struct fann_error*)data1, FANN_E_TRAIN_DATA_MISMATCH);
+-        printf("Error: fann_merge_train_data(): FANN_E_CANT_ALLOCATE_MEM\n");
++        pg_enclave_log("Error: fann_merge_train_data(): FANN_E_CANT_ALLOCATE_MEM\n");
+         return NULL;
+     }
+ 
+@@ -2494,7 +2493,7 @@
+     if(dest->input == NULL)
+     {
+         // fann_error((struct fann_error*)data1, FANN_E_CANT_ALLOCATE_MEM);
+-        printf("Error: fann_merge_train_data(): FANN_E_CANT_ALLOCATE_MEM\n");
++        pg_enclave_log("Error: fann_merge_train_data(): FANN_E_CANT_ALLOCATE_MEM\n");
+         fann_destroy_train(dest);
+         return NULL;
+     }
+@@ -2503,7 +2502,7 @@
+     if(dest->output == NULL)
+     {
+         // fann_error((struct fann_error*)data1, FANN_E_CANT_ALLOCATE_MEM);
+-        printf("Error: fann_merge_train_data(): FANN_E_CANT_ALLOCATE_MEM\n");
++        pg_enclave_log("Error: fann_merge_train_data(): FANN_E_CANT_ALLOCATE_MEM\n");
+         fann_destroy_train(dest);
+         return NULL;
+     }
+@@ -2512,7 +2511,7 @@
+     if(data_input == NULL)
+     {
+         // fann_error((struct fann_error*)data1, FANN_E_CANT_ALLOCATE_MEM);
+-        printf("Error: fann_merge_train_data(): FANN_E_CANT_ALLOCATE_MEM\n");
++        pg_enclave_log("Error: fann_merge_train_data(): FANN_E_CANT_ALLOCATE_MEM\n");
+         fann_destroy_train(dest);
+         return NULL;
+     }
+@@ -2524,7 +2523,7 @@
+     if(data_output == NULL)
+     {
+         // fann_error((struct fann_error*)data1, FANN_E_CANT_ALLOCATE_MEM);
+-        printf("Error: fann_merge_train_data(): FANN_E_CANT_ALLOCATE_MEM\n");
++        pg_enclave_log("Error: fann_merge_train_data(): FANN_E_CANT_ALLOCATE_MEM\n");
+         fann_destroy_train(dest);
+         return NULL;
+     }
+@@ -2556,7 +2555,7 @@
+     if(dest == NULL)
+     {
+         // fann_error((struct fann_error*)data, FANN_E_CANT_ALLOCATE_MEM);
+-        printf("Error: fann_duplicate_train_data(): FANN_E_CANT_ALLOCATE_MEM\n");
++        pg_enclave_log("Error: fann_duplicate_train_data(): FANN_E_CANT_ALLOCATE_MEM\n");
+         return NULL;
+     }
+ 
+@@ -2570,7 +2569,7 @@
+     if(dest->input == NULL)
+     {
+         // fann_error((struct fann_error*)data, FANN_E_CANT_ALLOCATE_MEM);
+-        printf("Error: fann_duplicate_train_data(): FANN_E_CANT_ALLOCATE_MEM\n");
++        pg_enclave_log("Error: fann_duplicate_train_data(): FANN_E_CANT_ALLOCATE_MEM\n");
+         fann_destroy_train(dest);
+         return NULL;
+     }
+@@ -2579,7 +2578,7 @@
+     if(dest->output == NULL)
+     {
+         // fann_error((struct fann_error*)data, FANN_E_CANT_ALLOCATE_MEM);
+-        printf("Error: fann_duplicate_train_data(): FANN_E_CANT_ALLOCATE_MEM\n");
++        pg_enclave_log("Error: fann_duplicate_train_data(): FANN_E_CANT_ALLOCATE_MEM\n");
+         fann_destroy_train(dest);
+         return NULL;
+     }
+@@ -2588,7 +2587,7 @@
+     if(data_input == NULL)
+     {
+         // fann_error((struct fann_error*)data, FANN_E_CANT_ALLOCATE_MEM);
+-        printf("Error: fann_duplicate_train_data(): FANN_E_CANT_ALLOCATE_MEM\n");
++        pg_enclave_log("Error: fann_duplicate_train_data(): FANN_E_CANT_ALLOCATE_MEM\n");
+         fann_destroy_train(dest);
+         return NULL;
+     }
+@@ -2598,7 +2597,7 @@
+     if(data_output == NULL)
+     {
+         // fann_error((struct fann_error*)data, FANN_E_CANT_ALLOCATE_MEM);
+-        printf("Error: fann_duplicate_train_data(): FANN_E_CANT_ALLOCATE_MEM\n");
++        pg_enclave_log("Error: fann_duplicate_train_data(): FANN_E_CANT_ALLOCATE_MEM\n");
+         fann_destroy_train(dest);
+         return NULL;
+     }
+@@ -2626,14 +2625,14 @@
+     if(dest == NULL)
+     {
+         // fann_error((struct fann_error*)data, FANN_E_CANT_ALLOCATE_MEM);
+-        printf("Error: fann_subset_train_data(): FANN_E_CANT_ALLOCATE_MEM\n");
++        pg_enclave_log("Error: fann_subset_train_data(): FANN_E_CANT_ALLOCATE_MEM\n");
+         return NULL;
+     }
+     
+     if(pos > data->num_data || pos+length > data->num_data)
+     {
+         // fann_error((struct fann_error*)data, FANN_E_TRAIN_DATA_SUBSET, pos, length, data->num_data);
+-        printf("Error: fann_subset_train_data(): FANN_E_CANT_ALLOCATE_MEM\n");
++        pg_enclave_log("Error: fann_subset_train_data(): FANN_E_CANT_ALLOCATE_MEM\n");
+         return NULL;
+     }
+ 
+@@ -2647,7 +2646,7 @@
+     if(dest->input == NULL)
+     {
+         // fann_error((struct fann_error*)data, FANN_E_CANT_ALLOCATE_MEM);
+-        printf("Error: fann_subset_train_data(): FANN_E_CANT_ALLOCATE_MEM\n");
++        pg_enclave_log("Error: fann_subset_train_data(): FANN_E_CANT_ALLOCATE_MEM\n");
+         fann_destroy_train(dest);
+         return NULL;
+     }
+@@ -2656,7 +2655,7 @@
+     if(dest->output == NULL)
+     {
+         // fann_error((struct fann_error*)data, FANN_E_CANT_ALLOCATE_MEM);
+-        printf("Error: fann_subset_train_data(): FANN_E_CANT_ALLOCATE_MEM\n");
++        pg_enclave_log("Error: fann_subset_train_data(): FANN_E_CANT_ALLOCATE_MEM\n");
+         fann_destroy_train(dest);
+         return NULL;
+     }
+@@ -2665,7 +2664,7 @@
+     if(data_input == NULL)
+     {
+         // fann_error((struct fann_error*)data, FANN_E_CANT_ALLOCATE_MEM);
+-        printf("Error: fann_subset_train_data(): FANN_E_CANT_ALLOCATE_MEM\n");
++        pg_enclave_log("Error: fann_subset_train_data(): FANN_E_CANT_ALLOCATE_MEM\n");
+         fann_destroy_train(dest);
+         return NULL;
+     }
+@@ -2675,7 +2674,7 @@
+     if(data_output == NULL)
+     {
+         // fann_error((struct fann_error*)data, FANN_E_CANT_ALLOCATE_MEM);
+-        printf("Error: fann_subset_train_data(): FANN_E_CANT_ALLOCATE_MEM\n");
++        pg_enclave_log("Error: fann_subset_train_data(): FANN_E_CANT_ALLOCATE_MEM\n");
+         fann_destroy_train(dest);
+         return NULL;
+     }
+@@ -2721,7 +2720,7 @@
+     if(data == NULL)
+     {
+         // fann_error(NULL, FANN_E_CANT_ALLOCATE_MEM);
+-        printf("Error: fann_create_train(): FANN_E_CANT_ALLOCATE_MEM\n");
++        pg_enclave_log("Error: fann_create_train(): FANN_E_CANT_ALLOCATE_MEM\n");
+         return NULL;
+     }
+     
+@@ -2734,7 +2733,7 @@
+     if(data->input == NULL)
+     {
+         // fann_error(NULL, FANN_E_CANT_ALLOCATE_MEM);
+-        printf("Error: fann_create_train(): FANN_E_CANT_ALLOCATE_MEM\n");
++        pg_enclave_log("Error: fann_create_train(): FANN_E_CANT_ALLOCATE_MEM\n");
+         fann_destroy_train(data);
+         return NULL;
+     }
+@@ -2743,7 +2742,7 @@
+     if(data->output == NULL)
+     {
+         // fann_error(NULL, FANN_E_CANT_ALLOCATE_MEM);
+-        printf("Error: fann_create_train(): FANN_E_CANT_ALLOCATE_MEM\n");
++        pg_enclave_log("Error: fann_create_train(): FANN_E_CANT_ALLOCATE_MEM\n");
+         fann_destroy_train(data);
+         return NULL;
+     }
+@@ -2752,7 +2751,7 @@
+     if(data_input == NULL)
+     {
+         // fann_error(NULL, FANN_E_CANT_ALLOCATE_MEM);
+-        printf("Error: fann_create_train(): FANN_E_CANT_ALLOCATE_MEM\n");
++        pg_enclave_log("Error: fann_create_train(): FANN_E_CANT_ALLOCATE_MEM\n");
+         fann_destroy_train(data);
+         return NULL;
+     }
+@@ -2761,7 +2760,7 @@
+     if(data_output == NULL)
+     {
+         // fann_error(NULL, FANN_E_CANT_ALLOCATE_MEM);
+-        printf("Error: fann_create_train(): FANN_E_CANT_ALLOCATE_MEM\n");
++        pg_enclave_log("Error: fann_create_train(): FANN_E_CANT_ALLOCATE_MEM\n");
+         fann_destroy_train(data);
+         return NULL;
+     }
+@@ -2885,7 +2884,7 @@
+     if(ann->scale_mean_in == NULL)
+     {
+         // fann_error( (struct fann_error *) ann, FANN_E_SCALE_NOT_PRESENT );
+-        printf("Error: fann_scale_input(): FANN_E_SCALE_NOT_PRESENT\n");
++        pg_enclave_log("Error: fann_scale_input(): FANN_E_SCALE_NOT_PRESENT\n");
+         return;
+     }
+     
+@@ -2910,7 +2909,7 @@
+     if(ann->scale_mean_in == NULL)
+     {
+         // fann_error( (struct fann_error *) ann, FANN_E_SCALE_NOT_PRESENT );
+-        printf("Error: fann_scale_output(): FANN_E_SCALE_NOT_PRESENT\n");
++        pg_enclave_log("Error: fann_scale_output(): FANN_E_SCALE_NOT_PRESENT\n");
+         return;
+     }
+ 
+@@ -2935,7 +2934,7 @@
+     if(ann->scale_mean_in == NULL)
+     {
+         // fann_error( (struct fann_error *) ann, FANN_E_SCALE_NOT_PRESENT );
+-        printf("Error: fann_descale_input(): FANN_E_SCALE_NOT_PRESENT\n");
++        pg_enclave_log("Error: fann_descale_input(): FANN_E_SCALE_NOT_PRESENT\n");
+         return;
+     }
+ 
+@@ -2963,7 +2962,7 @@
+     if(ann->scale_mean_in == NULL)
+     {
+         // fann_error( (struct fann_error *) ann, FANN_E_SCALE_NOT_PRESENT );
+-        printf("Error: fann_descale_output(): FANN_E_SCALE_NOT_PRESENT\n");
++        pg_enclave_log("Error: fann_descale_output(): FANN_E_SCALE_NOT_PRESENT\n");
+         return;
+     }
+ 
+@@ -2991,7 +2990,7 @@
+     if(ann->scale_mean_in == NULL)
+     {
+         // fann_error( (struct fann_error *) ann, FANN_E_SCALE_NOT_PRESENT );
+-        printf("Error: fann_scale_train(): FANN_E_SCALE_NOT_PRESENT\n");
++        pg_enclave_log("Error: fann_scale_train(): FANN_E_SCALE_NOT_PRESENT\n");
+         return;
+     }
+     /* Check that we have good training data. */
+@@ -3014,7 +3013,7 @@
+     if(ann->scale_mean_in == NULL)
+     {
+         // fann_error( (struct fann_error *) ann, FANN_E_SCALE_NOT_PRESENT );
+-        printf("Error: fann_descale_train(): FANN_E_SCALE_NOT_PRESENT\n");
++        pg_enclave_log("Error: fann_descale_train(): FANN_E_SCALE_NOT_PRESENT\n");
+         return;
+     }
+     /* Check that we have good training data. */
+@@ -3086,7 +3085,7 @@
+        || data->num_output != ann->num_output)
+     {
+         // fann_error( (struct fann_error *) ann, FANN_E_TRAIN_DATA_MISMATCH );
+-        printf("Error: fann_set_input_scaling_params(): FANN_E_TRAIN_DATA_MISMATCH\n");
++        pg_enclave_log("Error: fann_set_input_scaling_params(): FANN_E_TRAIN_DATA_MISMATCH\n");
+         return -1;
+     }
+ 
+@@ -3125,7 +3124,7 @@
+        || data->num_output != ann->num_output)
+     {
+         // fann_error( (struct fann_error *) ann, FANN_E_TRAIN_DATA_MISMATCH );
+-        printf("Error: fann_set_output_scaling_params(): FANN_E_TRAIN_DATA_MISMATCH\n");
++        pg_enclave_log("Error: fann_set_output_scaling_params(): FANN_E_TRAIN_DATA_MISMATCH\n");
+         return -1;
+     }
+ 
+@@ -3200,14 +3199,14 @@
+     if(ann->num_input != data->num_input)
+     {
+         // fann_error((struct fann_error *) ann, FANN_E_INPUT_NO_MATCH, ann->num_input, data->num_input);
+-        printf("Error: fann_check_input_output_sizes(): FANN_E_INPUT_NO_MATCH\n");
++        pg_enclave_log("Error: fann_check_input_output_sizes(): FANN_E_INPUT_NO_MATCH\n");
+         return -1;
+     }
+         
+     if(ann->num_output != data->num_output)
+     {
+         // fann_error((struct fann_error *) ann, FANN_E_OUTPUT_NO_MATCH, ann->num_output, data->num_output);
+-        printf("Error: fann_check_input_output_sizes(): FANN_E_OUTPUT_NO_MATCH\n");
++        pg_enclave_log("Error: fann_check_input_output_sizes(): FANN_E_OUTPUT_NO_MATCH\n");
+         return -1;
+     }
+     
+@@ -3263,7 +3262,7 @@
+             return (fann_type) fann_cos_derive(steepness, sum);
+         case FANN_THRESHOLD:
+             // fann_error(NULL, FANN_E_CANT_TRAIN_ACTIVATION);
+-            printf("Error: fann_activation_derived(): FANN_E_CANT_TRAIN_ACTIVATION\n");
++            pg_enclave_log("Error: fann_activation_derived(): FANN_E_CANT_TRAIN_ACTIVATION\n");
+     }
+     return 0;
+ }
+@@ -3337,7 +3336,7 @@
+ 
+     ann->MSE_value += neuron_diff2;
+ 
+-    /*printf("neuron_diff %f = (%f - %f)[/2], neuron_diff2=%f, sum=%f, MSE_value=%f, num_MSE=%d\n", neuron_diff, *desired_output, neuron_value, neuron_diff2, last_layer_begin->sum, ann->MSE_value, ann->num_MSE); */
++    /*pg_enclave_log("neuron_diff %f = (%f - %f)[/2], neuron_diff2=%f, sum=%f, MSE_value=%f, num_MSE=%d\n", neuron_diff, *desired_output, neuron_value, neuron_diff2, last_layer_begin->sum, ann->MSE_value, ann->num_MSE); */
+     if(fann_abs(neuron_diff) >= ann->bit_fail_limit)
+     {
+         ann->num_bit_fail++;
+@@ -3399,7 +3398,7 @@
+  */
+ FANN_EXTERNAL void FANN_API fann_reset_MSE(struct fann *ann)
+ {
+-/*printf("resetMSE %d %f\n", ann->num_MSE, ann->MSE_value);*/
++/*pg_enclave_log("resetMSE %d %f\n", ann->num_MSE, ann->MSE_value);*/
+     ann->num_MSE = 0;
+     ann->MSE_value = 0;
+     ann->num_bit_fail = 0;
+@@ -3430,7 +3429,7 @@
+         if(ann->train_errors == NULL)
+         {
+             // fann_error((struct fann_error *) ann, FANN_E_CANT_ALLOCATE_MEM);
+-            printf("Error: fann_compute_MSE(): FANN_E_CANT_ALLOCATE_MEM\n");
++            pg_enclave_log("Error: fann_compute_MSE(): FANN_E_CANT_ALLOCATE_MEM\n");
+             return;
+         }
+     }
+@@ -3442,7 +3441,7 @@
+     error_begin = ann->train_errors;
+ 
+ #ifdef DEBUGTRAIN
+-    printf("\ncalculate errors\n");
++    pg_enclave_log("\ncalculate errors\n");
+ #endif
+     /* calculate the error and place it in the output layer */
+     error_it = error_begin + (last_layer_begin - first_neuron);
+@@ -3521,9 +3520,9 @@
+                 weights = ann->weights + neuron_it->first_con;
+                 for(i = neuron_it->last_con - neuron_it->first_con; i--;)
+                 {
+-                    /*printf("i = %d\n", i);
+-                     * printf("error_prev_layer[%d] = %f\n", i, error_prev_layer[i]);
+-                     * printf("weights[%d] = %f\n", i, weights[i]); */
++                    /*pg_enclave_log("i = %d\n", i);
++                     * pg_enclave_log("error_prev_layer[%d] = %f\n", i, error_prev_layer[i]);
++                     * pg_enclave_log("weights[%d] = %f\n", i, weights[i]); */
+                     error_prev_layer[i] += tmp_error * weights[i];
+                 }
+             }
+@@ -3585,20 +3584,20 @@
+         if(ann->prev_weights_deltas == NULL)
+         {
+             // fann_error((struct fann_error *) ann, FANN_E_CANT_ALLOCATE_MEM);
+-            printf("Error: fann_update_weights(): FANN_E_CANT_ALLOCATE_MEM\n");
++            pg_enclave_log("Error: fann_update_weights(): FANN_E_CANT_ALLOCATE_MEM\n");
+             return;
+         }       
+     }
+ 
+ #ifdef DEBUGTRAIN
+-    printf("\nupdate weights\n");
++    pg_enclave_log("\nupdate weights\n");
+ #endif
+     deltas_begin = ann->prev_weights_deltas;
+     prev_neurons = first_neuron;
+     for(layer_it = (first_layer + 1); layer_it != last_layer; layer_it++)
+     {
+ #ifdef DEBUGTRAIN
+-        printf("layer[%d]\n", layer_it - first_layer);
++        pg_enclave_log("layer[%d]\n", layer_it - first_layer);
+ #endif
+         last_neuron = layer_it->last_neuron;
+         if(ann->connection_rate >= 1)
+@@ -3666,7 +3665,7 @@
+         if(ann->train_slopes == NULL)
+         {
+             // fann_error((struct fann_error *) ann, FANN_E_CANT_ALLOCATE_MEM);
+-            printf("Error: fann_update_slopes_batch(): FANN_E_CANT_ALLOCATE_MEM\n");
++            pg_enclave_log("Error: fann_update_slopes_batch(): FANN_E_CANT_ALLOCATE_MEM\n");
+             return;
+         }
+     }
+@@ -3684,7 +3683,7 @@
+     slope_begin = ann->train_slopes;
+ 
+ #ifdef DEBUGTRAIN
+-    printf("\nupdate slopes\n");
++    pg_enclave_log("\nupdate slopes\n");
+ #endif
+ 
+     prev_neurons = first_neuron;
+@@ -3692,7 +3691,7 @@
+     for(; layer_begin <= layer_end; layer_begin++)
+     {
+ #ifdef DEBUGTRAIN
+-        printf("layer[%d]\n", layer_begin - ann->first_layer);
++        pg_enclave_log("layer[%d]\n", layer_begin - ann->first_layer);
+ #endif
+         last_neuron = layer_begin->last_neuron;
+         if(ann->connection_rate >= 1)
+@@ -3748,7 +3747,7 @@
+         if(ann->train_slopes == NULL)
+         {
+             // fann_error((struct fann_error *) ann, FANN_E_CANT_ALLOCATE_MEM);
+-            printf("Error: fann_clear_train_arrays(): FANN_E_CANT_ALLOCATE_MEM\n");
++            pg_enclave_log("Error: fann_clear_train_arrays(): FANN_E_CANT_ALLOCATE_MEM\n");
+             return;
+         }
+     }
+@@ -3764,7 +3763,7 @@
+         if(ann->prev_steps == NULL)
+         {
+             // fann_error((struct fann_error *) ann, FANN_E_CANT_ALLOCATE_MEM);
+-            printf("Error: fann_clear_train_arrays(): FANN_E_CANT_ALLOCATE_MEM\n");
++            pg_enclave_log("Error: fann_clear_train_arrays(): FANN_E_CANT_ALLOCATE_MEM\n");
+             return;
+         }
+     }
+@@ -3789,7 +3788,7 @@
+         if(ann->prev_train_slopes == NULL)
+         {
+             // fann_error((struct fann_error *) ann, FANN_E_CANT_ALLOCATE_MEM);
+-            printf("Error: fann_clear_train_arrays(): FANN_E_CANT_ALLOCATE_MEM\n");
++            pg_enclave_log("Error: fann_clear_train_arrays(): FANN_E_CANT_ALLOCATE_MEM\n");
+             return;
+         }
+     }
+@@ -3876,7 +3875,7 @@
+         /*
+         if(next_step > 1000 || next_step < -1000)
+         {
+-            printf("quickprop[%d] weight=%f, slope=%f, prev_slope=%f, next_step=%f, prev_step=%f\n",
++            pg_enclave_log("quickprop[%d] weight=%f, slope=%f, prev_slope=%f, next_step=%f, prev_step=%f\n",
+                    i, weights[i], slope, prev_slope, next_step, prev_step);
+             
+                if(next_step > 1000)
+@@ -3954,7 +3953,7 @@
+         }
+ 
+         /*if(i == 2){
+-         * printf("weight=%f, slope=%f, next_step=%f, prev_step=%f\n", weights[i], slope, next_step, prev_step);
++         * pg_enclave_log("weight=%f, slope=%f, next_step=%f, prev_step=%f\n", weights[i], slope, next_step, prev_step);
+          * } */
+ 
+         /* update global data arrays */
+@@ -4034,7 +4033,7 @@
+ 
+ 
+         /*if(i == 2){
+-         * printf("weight=%f, slope=%f, next_step=%f, prev_step=%f\n", weights[i], slope, next_step, prev_step);
++         * pg_enclave_log("weight=%f, slope=%f, next_step=%f, prev_step=%f\n", weights[i], slope, next_step, prev_step);
+          * } */
+ 
+         /* update global data arrays */
+@@ -4070,7 +4069,7 @@
+     if(layer <= 0 || layer >= (ann->last_layer - ann->first_layer))
+     {
+         // fann_error((struct fann_error *) ann, FANN_E_INDEX_OUT_OF_BOUND, layer);
+-        printf("Error: fann_get_layer(): FANN_E_INDEX_OUT_OF_BOUND\n");
++        pg_enclave_log("Error: fann_get_layer(): FANN_E_INDEX_OUT_OF_BOUND\n");
+         return NULL;
+     }
+     
+@@ -4082,7 +4081,7 @@
+     if(neuron >= (layer->last_neuron - layer->first_neuron))
+     {
+         // fann_error((struct fann_error *) ann, FANN_E_INDEX_OUT_OF_BOUND, neuron);
+-        printf("Error: fann_get_neuron_layer(): FANN_E_INDEX_OUT_OF_BOUND\n");
++        pg_enclave_log("Error: fann_get_neuron_layer(): FANN_E_INDEX_OUT_OF_BOUND\n");
+         return NULL;    
+     }
+     
+--- a/CEE/isv_enclave/enclave_svm.cpp
++++ b/CEE/isv_enclave/enclave_svm.cpp
+@@ -474,7 +474,7 @@
+ 
+     if(2*nr_free < active_size)
+         // info("\nWARNING: using -h 0 may be faster\n");
+-        printf("\nWARNING: using -h 0 may be faster\n");
++        pg_enclave_log("\nWARNING: using -h 0 may be faster\n");
+ 
+     if (nr_free*l > 2*active_size*(l-active_size))
+     {
+@@ -568,7 +568,7 @@
+             counter = min(l,1000);
+             if(shrinking) do_shrinking();
+             // info(".");
+-            printf(".");
++            pg_enclave_log(".");
+         }
+ 
+         int i,j;
+@@ -579,7 +579,7 @@
+             // reset active set size and check
+             active_size = l;
+             // info("*");
+-            printf("*");
++            pg_enclave_log("*");
+             if(select_working_set(i,j)!=0)
+                 break;
+             else
+@@ -736,10 +736,10 @@
+             reconstruct_gradient();
+             active_size = l;
+             // info("*");
+-            printf("*");
++            pg_enclave_log("*");
+         }
+         // fprintf(stderr,"\nWARNING: reaching max number of iterations\n");
+-        printf("\nWARNING: reaching max number of iterations\n");
++        pg_enclave_log("\nWARNING: reaching max number of iterations\n");
+     }
+ 
+     // calculate rho
+@@ -774,7 +774,7 @@
+     si->upper_bound_n = Cn;
+ 
+     // info("\noptimization finished, #iter = %d\n",iter);
+-    printf("\noptimization finished, #iter = %d\n", iter);
++    pg_enclave_log("\noptimization finished, #iter = %d\n", iter);
+ 
+     delete[] p;
+     delete[] y;
+@@ -948,7 +948,7 @@
+         reconstruct_gradient();
+         active_size = l;
+         // info("*");
+-        printf("*");
++        pg_enclave_log("*");
+     }
+ 
+     for(i=0;i<active_size;i++)
+@@ -1468,7 +1468,7 @@
+ 
+     if (Cp==Cn)
+         // info("nu = %f\n", sum_alpha/(Cp*prob->l));
+-        printf("nu = %f\n", sum_alpha/(Cp*prob->l));
++        pg_enclave_log("nu = %f\n", sum_alpha/(Cp*prob->l));
+ 
+     for(i=0;i<l;i++)
+         alpha[i] *= y[i];
+@@ -1519,7 +1519,7 @@
+     double r = si->r;
+ 
+     // info("C = %f\n",1/r);
+-    printf("C = %f\n",1/r);
++    pg_enclave_log("C = %f\n",1/r);
+ 
+     for(i=0;i<l;i++)
+         alpha[i] *= y[i]/r;
+@@ -1597,7 +1597,7 @@
+         sum_alpha += fabs(alpha[i]);
+     }
+     // info("nu = %f\n",sum_alpha/(param->C*l));
+-    printf("nu = %f\n",sum_alpha/(param->C*l));
++    pg_enclave_log("nu = %f\n",sum_alpha/(param->C*l));
+ 
+     delete[] alpha2;
+     delete[] linear_term;
+@@ -1633,7 +1633,7 @@
+         alpha2, C, C, param->eps, si, param->shrinking);
+ 
+     // info("epsilon = %f\n",-si->r);
+-    printf("epsilon = %f\n",-si->r);
++    pg_enclave_log("epsilon = %f\n",-si->r);
+ 
+     for(i=0;i<l;i++)
+         alpha[i] = alpha2[i] - alpha2[i+l];
+@@ -1678,7 +1678,7 @@
+     }
+ 
+     // info("obj = %f, rho = %f\n",si.obj,si.rho);
+-    printf("obj = %f, rho = %f\n",si.obj,si.rho);
++    pg_enclave_log("obj = %f, rho = %f\n",si.obj,si.rho);
+ 
+     // output SVs
+ 
+@@ -1703,7 +1703,7 @@
+     }
+ 
+     // info("nSV = %d, nBSV = %d\n",nSV,nBSV);
+-    printf("nSV = %d, nBSV = %d\n",nSV,nBSV);
++    pg_enclave_log("nSV = %d, nBSV = %d\n",nSV,nBSV);
+ 
+     decision_function f;
+     f.alpha = alpha;
+@@ -1816,14 +1816,14 @@
+         if (stepsize < min_step)
+         {
+             // info("Line search fails in two-class probability estimates\n");
+-            printf("Line search fails in two-class probability estimates\n");
++            pg_enclave_log("Line search fails in two-class probability estimates\n");
+             break;
+         }
+     }
+ 
+     if (iter>=max_iter)
+         // info("Reaching maximal iterations in two-class probability estimates\n");
+-        printf("Reaching maximal iterations in two-class probability estimates\n");
++        pg_enclave_log("Reaching maximal iterations in two-class probability estimates\n");
+     free(t);
+ }
+ 
+@@ -1896,7 +1896,7 @@
+     }
+     if (iter>=max_iter)
+         // info("Exceeds max_iter in multiclass_prob\n");
+-        printf("Exceeds max_iter in multiclass_prob\n");
++        pg_enclave_log("Exceeds max_iter in multiclass_prob\n");
+     for(t=0;t<k;t++) free(Q[t]);
+     free(Q);
+     free(Qp);
+@@ -2025,7 +2025,7 @@
+             mae+=fabs(ymv[i]);
+     mae /= (prob->l-count);
+     // info("Prob. model for test data: target value = predicted value + z,\nz: Laplace distribution e^(-|z|/sigma)/(2sigma),sigma= %g\n",mae);
+-    printf("Prob. model for test data: target value = predicted value + z,\nz: Laplace distribution e^(-|z|/sigma)/(2sigma),sigma= %g\n",mae);
++    pg_enclave_log("Prob. model for test data: target value = predicted value + z,\nz: Laplace distribution e^(-|z|/sigma)/(2sigma),sigma= %g\n",mae);
+     free(ymv);
+     return mae;
+ }
+@@ -2174,7 +2174,7 @@
+         svm_group_classes(prob,&nr_class,&label,&start,&count,perm);
+         if(nr_class == 1)
+             // info("WARNING: training data in only one class. See README for details.\n");
+-            printf("WARNING: training data in only one class. See README for details.\n");
++            pg_enclave_log("WARNING: training data in only one class. See README for details.\n");
+ 
+         svm_node **x = Malloc(svm_node *,l);
+         int i;
+@@ -2194,7 +2194,7 @@
+                     break;
+             if(j == nr_class)
+                 // fprintf(stderr,"WARNING: class label %d specified in weight is not found\n", param->weight_label[i]);
+-                printf("WARNING: class label %d specified in weight is not found\n", param->weight_label[i]);
++                pg_enclave_log("WARNING: class label %d specified in weight is not found\n", param->weight_label[i]);
+ 
+             else
+                 weighted_C[j] *= param->weight[i];
+@@ -2296,7 +2296,7 @@
+         }
+ 
+         // info("Total nSV = %d\n",total_sv);
+-        printf("Total nSV = %d\n",total_sv);
++        pg_enclave_log("Total nSV = %d\n",total_sv);
+ 
+         model->l = total_sv;
+         model->SV = Malloc(svm_node *,total_sv);
+@@ -2373,7 +2373,7 @@
+     {
+         nr_fold = l;
+         // fprintf(stderr,"WARNING: # folds > # data. Will use # folds = # data instead (i.e., leave-one-out cross validation)\n");
+-        printf("WARNING: # folds > # data. Will use # folds = # data instead (i.e., leave-one-out cross validation)\n");
++        pg_enclave_log("WARNING: # folds > # data. Will use # folds = # data instead (i.e., leave-one-out cross validation)\n");
+ 
+     }
+     fold_start = Malloc(int,nr_fold+1);
+@@ -2538,7 +2538,7 @@
+     else
+     {
+         // fprintf(stderr,"Model doesn't contain information for SVR probability inference\n");
+-        printf("Model doesn't contain information for SVR probability inference\n");
++        pg_enclave_log("Model doesn't contain information for SVR probability inference\n");
+         return 0;
+     }
+ }

@@ -1,0 +1,7 @@
+{
+  "work2-source/pkg/svmpilot/svm.cpp": "0ff4902e80b158a5d11538d4a38eede7d2f3adab4f0885a70368b9a239e59a66",
+  "work2-source/pkg/svmpilot/svm.h": "7371e9bfa03f9c358c5083b3764d44cea28c8b2fe4b5ac49df86d498d2a6e8f0",
+  "work2-source/pkg/svmpilot/svm_task.cpp": "e9c1d26d9ba3ffcc438634e8ffe72c7a3c15b9a91d92df031cd1bf0f0ee2ad29",
+  "work2-source/pkg/svmpilot/svm_task.h": "8b7dceef98a482767e129a0c5273155dd615375b42c117ece6d27026efcf239c",
+  "work2-source/pkg/svmpilot/transform.hpp": "6ec0c54ea6df09349b89529567252901a9cad04ebf98359064a39c0dbc564ea3"
+}

@@ -1,0 +1,121 @@
+{
+  "metric": "Continuous protected-processing total with common exp",
+  "observations": 108,
+  "fresh_observations": 72,
+  "reused_observations": 36,
+  "groups": [
+    {
+      "n": 5000,
+      "system": "privacyguard",
+      "source_batch": "svm-common-exp-scaling-20261121",
+      "count": 12,
+      "mean_s": 0.8361383063333334,
+      "sd_s": 0.0022212162689407206
+    },
+    {
+      "n": 5000,
+      "system": "vddpi",
+      "source_batch": "svm-common-exp-scaling-20261121",
+      "count": 12,
+      "mean_s": 0.8996289166666667,
+      "sd_s": 0.0031766299311844666
+    },
+    {
+      "n": 5000,
+      "system": "work2",
+      "source_batch": "svm-common-exp-scaling-20261121",
+      "count": 12,
+      "mean_s": 0.94587850225,
+      "sd_s": 0.0033041094994800024
+    },
+    {
+      "n": 10000,
+      "system": "privacyguard",
+      "source_batch": "svm-common-exp-scaling-20261121",
+      "count": 12,
+      "mean_s": 3.809153531416667,
+      "sd_s": 0.10681095474155787
+    },
+    {
+      "n": 10000,
+      "system": "vddpi",
+      "source_batch": "svm-common-exp-scaling-20261121",
+      "count": 12,
+      "mean_s": 3.9248293333333333,
+      "sd_s": 0.12160323840359859
+    },
+    {
+      "n": 10000,
+      "system": "work2",
+      "source_batch": "svm-common-exp-scaling-20261121",
+      "count": 12,
+      "mean_s": 4.04559783775,
+      "sd_s": 0.10269097602602399
+    },
+    {
+      "n": 32561,
+      "system": "privacyguard",
+      "source_batch": "svm-threeway-exp-20261115",
+      "count": 12,
+      "mean_s": 52.25706128591666,
+      "sd_s": 1.3361467669651095
+    },
+    {
+      "n": 32561,
+      "system": "vddpi",
+      "source_batch": "svm-threeway-exp-20261115",
+      "count": 12,
+      "mean_s": 51.9205985,
+      "sd_s": 0.5911189020429434
+    },
+    {
+      "n": 32561,
+      "system": "work2",
+      "source_batch": "svm-threeway-exp-20261115",
+      "count": 12,
+      "mean_s": 52.49357943983333,
+      "sd_s": 0.6269686105545506
+    }
+  ],
+  "gaps": [
+    {
+      "n": 5000,
+      "against": "privacyguard",
+      "difference_s": 0.10974019591666662,
+      "overhead_percent": 13.124646375538473
+    },
+    {
+      "n": 5000,
+      "against": "vddpi",
+      "difference_s": 0.046249585583333364,
+      "overhead_percent": 5.1409625376092505
+    },
+    {
+      "n": 10000,
+      "against": "privacyguard",
+      "difference_s": 0.23644430633333302,
+      "overhead_percent": 6.207266375146525
+    },
+    {
+      "n": 10000,
+      "against": "vddpi",
+      "difference_s": 0.12076850441666664,
+      "overhead_percent": 3.077038366763807
+    },
+    {
+      "n": 32561,
+      "against": "privacyguard",
+      "difference_s": 0.23651815391666986,
+      "overhead_percent": 0.4526051563110256
+    },
+    {
+      "n": 32561,
+      "against": "vddpi",
+      "difference_s": 0.5729809398333359,
+      "overhead_percent": 1.103571523416358
+    }
+  ],
+  "work2_full_commitment_encrypt_sign_ms": 33.30305975,
+  "supplement_analysis_sha256": "1b4e21d9eefd8107b1e20c89f8031b94b238f0a1ae5f412e9994395d7b642383",
+  "prior_analysis_sha256": "36e6c00f5509f74f36ae62474be5fb74065b54dcaf9651c6c17fba150aebeac6"
+}

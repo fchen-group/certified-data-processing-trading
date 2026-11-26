@@ -1,0 +1,235 @@
+{
+  "source_sha256": {
+    "sgx-evidence.tar.gz": "177b35e8c72a70a6273ad5224a5f056e6c7f02cef74039117b62511c8cee25d7",
+    "client-evidence.tar.gz": "725e90ee2cee2e59c5cf0b27b0f06237beece4f43c776090a4bb35c32a6c5d7b",
+    "formal-independent-verification.json": "13764ad8c4f6130bf54a4d7005fd6c436fdaac5d4507f9e69335934aeccc230a",
+    "formal-summary.json": "a6a5988598e0bf844dab83a9736c758c6bcf5bed0766f23a158ef9bdb473d92c",
+    "c1-verification.json": "7a72be11e738dd52e5fa0e4986873b746c72e8d1c3ab282412e5495eafbdd74b",
+    "diagnostic-decision.json": "5bd9c9033247f4e19be5cf2d4efd1137122ad0f0bbe6b451b23aeb4514b94f54"
+  },
+  "observations": 600,
+  "repetitions_per_case_backend": 30,
+  "c1_mean_ms": {
+    "start_to_tcp_ready_ns": 6254.434695800001,
+    "key_certificate_ns": 0.3537550333333333,
+    "report_generation_ns": 3313.0953913666667,
+    "program_initialization_ns": 3313.4598686333334,
+    "report_fetch_verify_do_ns": 20.027815,
+    "report_fetch_verify_db_ns": 19.115656233333333,
+    "report_fetch_verify_pair_ns": 39.14347123333334
+  },
+  "comparisons": {
+    "t1-adult-1000": {
+      "n": 1000,
+      "native_ms": 3.7259767666666668,
+      "sgx_ms": 9.258642666666667,
+      "overhead_percent": 148.4890069497034,
+      "sgx_phases_ms": {
+        "analyze": 5.7750709,
+        "commitment": 0.5783612666666668,
+        "decrypt_parse": 2.2205752666666667,
+        "encrypt_sign": 0.44115553333333335,
+        "load_ciphertext": 0.24347970000000002
+      },
+      "sgx_phase_percent": {
+        "analyze": 62.374919390632066,
+        "commitment": 6.246717661422511,
+        "decrypt_parse": 23.98381000987618,
+        "encrypt_sign": 4.764797057365644,
+        "load_ciphertext": 2.629755880703608
+      },
+      "read_share_of_increment_percent": 2.8753154966396943
+    },
+    "t1-adult-10000": {
+      "n": 10000,
+      "native_ms": 32.516347366666665,
+      "sgx_ms": 51.41808603333333,
+      "overhead_percent": 58.12995676766363,
+      "sgx_phases_ms": {
+        "analyze": 8.177606299999999,
+        "commitment": 9.7211768,
+        "decrypt_parse": 22.901722266666667,
+        "encrypt_sign": 0.25146256666666666,
+        "load_ciphertext": 10.3661181
+      },
+      "sgx_phase_percent": {
+        "analyze": 15.90414371841577,
+        "commitment": 18.906142857394485,
+        "decrypt_parse": 44.540207606755196,
+        "encrypt_sign": 0.4890547005262865,
+        "load_ciphertext": 20.16045111690826
+      },
+      "read_share_of_increment_percent": 51.289773060735726
+    },
+    "t1-adult-5000": {
+      "n": 5000,
+      "native_ms": 16.834448899999998,
+      "sgx_ms": 25.7079743,
+      "overhead_percent": 52.71051908328287,
+      "sgx_phases_ms": {
+        "analyze": 2.9164368333333335,
+        "commitment": 3.7025365666666668,
+        "decrypt_parse": 18.0735955,
+        "encrypt_sign": 0.24660376666666667,
+        "load_ciphertext": 0.7688016333333333
+      },
+      "sgx_phase_percent": {
+        "analyze": 11.344483230377795,
+        "commitment": 14.402288268456324,
+        "decrypt_parse": 70.30346027691493,
+        "encrypt_sign": 0.959250090220709,
+        "load_ciphertext": 2.9905181340302387
+      },
+      "read_share_of_increment_percent": 4.268362530785489
+    },
+    "t1-adult-full": {
+      "n": 48842,
+      "native_ms": 154.14038783333334,
+      "sgx_ms": 230.42171593333333,
+      "overhead_percent": 49.48821601673946,
+      "sgx_phases_ms": {
+        "analyze": 27.029568566666665,
+        "commitment": 46.02014606666667,
+        "decrypt_parse": 122.65908123333334,
+        "encrypt_sign": 0.23251416666666666,
+        "load_ciphertext": 34.4804059
+      },
+      "sgx_phase_percent": {
+        "analyze": 11.730477944399556,
+        "commitment": 19.972139292627016,
+        "decrypt_parse": 53.23243112590205,
+        "encrypt_sign": 0.10090809615094555,
+        "load_ciphertext": 14.964043540920436
+      },
+      "read_share_of_increment_percent": 40.53819941291767
+    },
+    "t1-synthetic-100000": {
+      "n": 100000,
+      "native_ms": 313.8681535333334,
+      "sgx_ms": 451.1060943,
+      "overhead_percent": 43.72471027140755,
+      "sgx_phases_ms": {
+        "analyze": 52.4939649,
+        "commitment": 81.007996,
+        "decrypt_parse": 249.68552906666667,
+        "encrypt_sign": 0.24634213333333332,
+        "load_ciphertext": 67.6722622
+      },
+      "sgx_phase_percent": {
+        "analyze": 11.636722616540363,
+        "commitment": 17.957637244006527,
+        "decrypt_parse": 55.34962445012277,
+        "encrypt_sign": 0.054608469370291395,
+        "load_ciphertext": 15.001407219960052
+      },
+      "read_share_of_increment_percent": 44.296198821110124
+    },
+    "t1-synthetic-50000": {
+      "n": 50000,
+      "native_ms": 157.44431136666668,
+      "sgx_ms": 235.036929,
+      "overhead_percent": 49.28257931950969,
+      "sgx_phases_ms": {
+        "analyze": 27.378641266666666,
+        "commitment": 47.519229366666664,
+        "decrypt_parse": 125.02395973333333,
+        "encrypt_sign": 0.2389335,
+        "load_ciphertext": 34.87616513333333
+      },
+      "sgx_phase_percent": {
+        "analyze": 11.648655121198706,
+        "commitment": 20.217771551408703,
+        "decrypt_parse": 53.19332594467882,
+        "encrypt_sign": 0.1016578547960861,
+        "load_ciphertext": 14.838589527917689
+      },
+      "read_share_of_increment_percent": 40.384866656702464
+    },
+    "t2-adult-1000": {
+      "n": 1000,
+      "native_ms": 4.254980266666666,
+      "sgx_ms": 10.975396533333333,
+      "overhead_percent": 157.9423603750673,
+      "sgx_phases_ms": {
+        "analyze": 7.455609666666667,
+        "commitment": 0.7953816,
+        "decrypt_parse": 2.228213933333333,
+        "encrypt_sign": 0.2491044,
+        "load_ciphertext": 0.24708693333333331
+      },
+      "sgx_phase_percent": {
+        "analyze": 67.93020775170415,
+        "commitment": 7.246950919580443,
+        "decrypt_parse": 20.301899130168405,
+        "encrypt_sign": 2.2696619593054885,
+        "load_ciphertext": 2.2512802392415305
+      },
+      "read_share_of_increment_percent": 2.370728146562032
+    },
+    "t2-adult-10000": {
+      "n": 10000,
+      "native_ms": 36.469086700000005,
+      "sgx_ms": 58.08490746666667,
+      "overhead_percent": 59.27162625289068,
+      "sgx_phases_ms": {
+        "analyze": 15.358454133333332,
+        "commitment": 9.3957803,
+        "decrypt_parse": 22.6309297,
+        "encrypt_sign": 0.24263579999999998,
+        "load_ciphertext": 10.457107533333334
+      },
+      "sgx_phase_percent": {
+        "analyze": 26.44138521206585,
+        "commitment": 16.17594089375451,
+        "decrypt_parse": 38.96180726979253,
+        "encrypt_sign": 0.41772606789335426,
+        "load_ciphertext": 18.00314055649375
+      },
+      "read_share_of_increment_percent": 44.76595948458572
+    },
+    "t2-adult-5000": {
+      "n": 5000,
+      "native_ms": 18.8725965,
+      "sgx_ms": 28.716933366666666,
+      "overhead_percent": 52.16206930862252,
+      "sgx_phases_ms": {
+        "analyze": 5.4365760666666665,
+        "commitment": 4.1188,
+        "decrypt_parse": 17.840135699999998,
+        "encrypt_sign": 0.25496979999999997,
+        "load_ciphertext": 1.0664518
+      },
+      "sgx_phase_percent": {
+        "analyze": 18.931603863305266,
+        "commitment": 14.342757102263986,
+        "decrypt_parse": 62.12409755669814,
+        "encrypt_sign": 0.8878726594670361,
+        "load_ciphertext": 3.7136688182655657
+      },
+      "read_share_of_increment_percent": 7.1444439870278575
+    },
+    "t2-adult-full": {
+      "n": 16281,
+      "native_ms": 58.443734633333335,
+      "sgx_ms": 92.69216890000001,
+      "overhead_percent": 58.60069429432579,
+      "sgx_phases_ms": {
+        "analyze": 20.383354533333335,
+        "commitment": 17.452593966666665,
+        "decrypt_parse": 41.77235543333333,
+        "encrypt_sign": 0.24869533333333335,
+        "load_ciphertext": 12.835169633333333
+      },
+      "sgx_phase_percent": {
+        "analyze": 21.99037391748132,
+        "commitment": 18.8285528041697,
+        "decrypt_parse": 45.06567914965827,
+        "encrypt_sign": 0.2683024211048894,
+        "load_ciphertext": 13.84709170758581
+      },
+      "read_share_of_increment_percent": 33.40854157276374
+    }
+  },
+  "figure_sha256": "5c1afab3484994fd3d54a592f7fb10070a10e97f9018cd51fb4a2ea3029c720a",
+  "scope": "C1 startup/report verification and C2/C3 compute-only measurements; all observations retained"
+}

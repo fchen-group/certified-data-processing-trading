@@ -1,0 +1,79 @@
+--- frozen/svm.cpp
++++ probe/svm.cpp
+@@ -1,3 +1,4 @@
++extern "C" double (*work2_exp_fn)(double);
+ #include <math.h>
+ #include <stdio.h>
+ #include <stdlib.h>
+@@ -239,7 +240,7 @@
+ 	}
+ 	double kernel_rbf(int i, int j) const
+ 	{
+-		return exp(-gamma*(x_square[i]+x_square[j]-2*dot(x[i],x[j])));
++		return work2_exp_fn(-gamma*(x_square[i]+x_square[j]-2*dot(x[i],x[j])));
+ 	}
+ 	double kernel_sigmoid(int i, int j) const
+ 	{
+@@ -362,7 +363,7 @@
+ 				++y;
+ 			}
+ 
+-			return exp(-param.gamma*sum);
++			return work2_exp_fn(-param.gamma*sum);
+ 		}
+ 		case SIGMOID:
+ 			return tanh(param.gamma*dot(x,y)+param.coef0);
+@@ -1735,9 +1736,9 @@
+ 		else t[i]=loTarget;
+ 		fApB = dec_values[i]*A+B;
+ 		if (fApB>=0)
+-			fval += t[i]*fApB + log(1+exp(-fApB));
++			fval += t[i]*fApB + log(1+work2_exp_fn(-fApB));
+ 		else
+-			fval += (t[i] - 1)*fApB +log(1+exp(fApB));
++			fval += (t[i] - 1)*fApB +log(1+work2_exp_fn(fApB));
+ 	}
+ 	for (iter=0;iter<max_iter;iter++)
+ 	{
+@@ -1750,13 +1751,13 @@
+ 			fApB = dec_values[i]*A+B;
+ 			if (fApB >= 0)
+ 			{
+-				p=exp(-fApB)/(1.0+exp(-fApB));
+-				q=1.0/(1.0+exp(-fApB));
++				p=work2_exp_fn(-fApB)/(1.0+work2_exp_fn(-fApB));
++				q=1.0/(1.0+work2_exp_fn(-fApB));
+ 			}
+ 			else
+ 			{
+-				p=1.0/(1.0+exp(fApB));
+-				q=exp(fApB)/(1.0+exp(fApB));
++				p=1.0/(1.0+work2_exp_fn(fApB));
++				q=work2_exp_fn(fApB)/(1.0+work2_exp_fn(fApB));
+ 			}
+ 			d2=p*q;
+ 			h11+=dec_values[i]*dec_values[i]*d2;
+@@ -1790,9 +1791,9 @@
+ 			{
+ 				fApB = dec_values[i]*newA+newB;
+ 				if (fApB >= 0)
+-					newf += t[i]*fApB + log(1+exp(-fApB));
++					newf += t[i]*fApB + log(1+work2_exp_fn(-fApB));
+ 				else
+-					newf += (t[i] - 1)*fApB +log(1+exp(fApB));
++					newf += (t[i] - 1)*fApB +log(1+work2_exp_fn(fApB));
+ 			}
+ 			// Check sufficient decrease
+ 			if (newf<fval+0.0001*stepsize*gd)
+@@ -1821,9 +1822,9 @@
+ 	double fApB = decision_value*A+B;
+ 	// 1-p used later; avoid catastrophic cancellation
+ 	if (fApB >= 0)
+-		return exp(-fApB)/(1.0+exp(-fApB));
++		return work2_exp_fn(-fApB)/(1.0+work2_exp_fn(-fApB));
+ 	else
+-		return 1.0/(1+exp(fApB)) ;
++		return 1.0/(1+work2_exp_fn(fApB)) ;
+ }
+ 
+ // Method 2 from the multiclass_prob paper by Wu, Lin, and Weng

@@ -1,0 +1,16 @@
+FROM gramineproject/gramine@sha256:84b3d222e0bd9ab941f0078a462af0dbc5518156b99b147c10a7b83722ac0c38
+USER root
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    build-essential libssl-dev libffi-dev zlib1g-dev libbz2-dev liblzma-dev \
+    libsqlite3-dev libreadline-dev ca-certificates curl xz-utils patch \
+    && rm -rf /var/lib/apt/lists/*
+COPY dependencies/Python-3.6.9.tar.xz /tmp/Python-3.6.9.tar.xz
+RUN echo '5e2f5f554e3f8f7f0296f7e73d8600c4e9acbaee6b2555b83206edf5153870da  /tmp/Python-3.6.9.tar.xz' | sha256sum -c - \
+    && tar -xJf /tmp/Python-3.6.9.tar.xz -C /opt \
+    && cd /opt/Python-3.6.9 \
+    && CFLAGS='-O2' LIBS='-lssl -lcrypto' ./configure --prefix=/opt/vddpi-python --with-ensurepip=no \
+    && make -j4 > /opt/cpython-build.log 2>&1 \
+    && make install > /opt/cpython-install.log 2>&1
+# This unrestricted interpreter is for building/testing only. The deployed
+# interpreter is relinked with the original application's hash-checking entry.
+ENTRYPOINT ["/bin/bash"]

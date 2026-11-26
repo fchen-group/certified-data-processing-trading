@@ -1,0 +1,9 @@
+FROM work2-vddpi-toolchain:cpython369
+COPY dependencies/wheels /opt/vddpi-wheels
+COPY adapter/requirements-runtime.txt /opt/requirements-vddpi.txt
+RUN /opt/vddpi-python/bin/python3.6 -m ensurepip \
+    && /opt/vddpi-python/bin/python3.6 -m pip install --no-index /opt/vddpi-wheels/pip-21.3.1-py3-none-any.whl \
+    && /opt/vddpi-python/bin/python3.6 -m pip install --no-index --find-links=/opt/vddpi-wheels -r /opt/requirements-vddpi.txt \
+    && /opt/vddpi-python/bin/python3.6 -c 'import ssl, ctypes, requests, jwt, cryptography; print(ssl.OPENSSL_VERSION)' \
+    && /opt/vddpi-python/bin/python3.6 -m pip freeze > /opt/vddpi-runtime-freeze.txt
+ENTRYPOINT ["/bin/bash"]

@@ -1,0 +1,53 @@
+--- a/docker/gramine_consumer/code_eval_02/main.py
++++ b/docker/gramine_consumer/code_eval_02/main.py
+@@ -14,6 +14,8 @@
+ from cryptography.hazmat.primitives.asymmetric import padding
+ from datetime import datetime
+ import plib
++from measurement import now_ns
++LAST_MEASUREMENT = None
+ CA_CERT = "./code/RootCA.pem"
+ TRUSTED_CA_CERT = "./certs/RootCA.pem"
+ SKEY = "./certs/private.key"
+@@ -251,6 +253,7 @@
+     is_met_condition = True
+ 
+     start = datetime.now()
++    begin_ns = now_ns()
+     for usage_statement in providers:
+         # is data cached?
+         file_path = "./data/" + usage_statement["data_ID"].replace("/", "-")
+@@ -277,6 +280,7 @@
+             else:
+                 raise ValueError("invalid argument number")
+     
++    input_done_ns = now_ns()
+     start_process_data = datetime.now()
+     if (is_met_condition):
+         processed_data = process_data(*provided_data)
+@@ -287,7 +291,10 @@
+                 data["condition"]["counter"] = str(int(data["condition"]["counter"]) - 1)
+         
+         # output
+-        tls_socket.send(processed_data.encode())
++        payload = processed_data.encode()
++        if tls_socket.send(payload) != len(payload):
++            raise RuntimeError("incomplete protected result")
++        protected_done_ns = now_ns()
+     
+     # data storing
+     start_store_data = datetime.now()
+@@ -297,6 +304,13 @@
+             remove_data(data)
+ 
+     end = datetime.now()
++    global LAST_MEASUREMENT
++    LAST_MEASUREMENT = {
++        "begin_ns": begin_ns, "input_done_ns": input_done_ns,
++        "protected_done_ns": protected_done_ns, "cleanup_done_ns": now_ns(),
++        "processing_ns": protected_done_ns - begin_ns,
++        "cached": cached,
++    }
+ 
+     elapsed_check_policy_ms = round((start_process_data - start).total_seconds() * 1000)
+     elapsed_process_data_ms = round((start_store_data - start_process_data).total_seconds() * 1000)

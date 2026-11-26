@@ -1,0 +1,13 @@
+{
+  "exe": "enclave",
+  "key": "signing-key.pem",
+  "debug": false,
+  "heapSize": 1024,
+  "executableHeap": false,
+  "productID": 1,
+  "securityVersion": 1,
+  "mounts": [
+    {"source": "input", "target": "/input", "type": "hostfs", "readOnly": true}
+  ],
+  "env": [{"name": "GOMAXPROCS", "value": "4"}]
+}

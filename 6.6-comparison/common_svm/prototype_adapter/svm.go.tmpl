@@ -1,0 +1,76 @@
+// Package svmpilot is an exploratory common LIBSVM workload, not a production API.
+package svmpilot
+
+/*
+#cgo CXXFLAGS: -O2 -std=c++11 -ffp-contract=off
+#cgo linux LDFLAGS: -Wl,-Bstatic -lstdc++ -lgcc_eh -Wl,-Bdynamic -lm
+#cgo darwin LDFLAGS: -lc++
+#cgo linux LDFLAGS: ${SRCDIR}/probe_exp.o
+#include "svm_task.h"
+int work2_math_select(int);
+int work2_math_bytes(unsigned char*);
+#include <stdint.h>
+int work2_svm_diag_read(uint64_t*);
+*/
+import "C"
+
+import (
+    "bytes"
+    "encoding/json"
+    "errors"
+    "fmt"
+    "math"
+    "unsafe"
+    "certified-data-processing-trading/pkg/perfclock"
+)
+
+const Task = "adult-svm-training-summary-pilot-v1"
+type Result struct {
+    Count uint64 `json:"count"`
+    SupportVectors uint64 `json:"support_vectors"`
+    TrainingCorrect uint64 `json:"training_correct"`
+    Rho float64 `json:"rho"`
+}
+var JoinNS, CallNS, ClearNS int64
+func Analyze(records [][]byte) ([]byte,error) {
+    if len(records)<2||len(records)>32561{return nil,errors.New("SVM pilot record limit")}
+    joinStart:=perfclock.Now()
+    raw:=append(bytes.Join(records,[]byte{'\n'}),'\n')
+    JoinNS=int64(perfclock.Now()-joinStart)
+    defer func(){start:=perfclock.Now();clear(raw);ClearNS=int64(perfclock.Now()-start)}()
+    output:=make([]byte,512)
+    callStart:=perfclock.Now()
+    length:=C.work2_svm_summary((*C.uchar)(unsafe.Pointer(&raw[0])),C.size_t(len(raw)),(*C.char)(unsafe.Pointer(&output[0])),C.size_t(len(output)))
+    CallNS=int64(perfclock.Now()-callStart)
+    if length<=0{return nil,fmt.Errorf("SVM workload failed: %d",int(length))}
+    return output[:int(length)],nil
+}
+func Compare(actual,expected []byte,n int)error{
+    var a,b Result
+    for _,item:=range []struct{raw []byte; out *Result}{{actual,&a},{expected,&b}}{
+        d:=json.NewDecoder(bytes.NewReader(item.raw));d.DisallowUnknownFields()
+        if e:=d.Decode(item.out);e!=nil{return e}
+    }
+    if a.Count!=uint64(n)||a.Count!=b.Count||a.SupportVectors!=b.SupportVectors||a.TrainingCorrect!=b.TrainingCorrect||math.IsNaN(a.Rho)||math.IsInf(a.Rho,0)||math.Abs(a.Rho-b.Rho)>1e-7*(1+math.Abs(b.Rho)){
+        return fmt.Errorf("SVM independent reference mismatch: got %+v expected %+v",a,b)
+    }
+    return nil
+}
+
+func Diagnostics() map[string]any {
+    var stamps [6]C.uint64_t
+    if C.work2_svm_diag_read(&stamps[0])!=1 {panic("invalid SVM diagnostic timestamps")}
+    values:=make([]uint64,6);for i:=range stamps{values[i]=uint64(stamps[i])}
+    return map[string]any{"stamps_ns":values,"go_join_ns":JoinNS,"cgo_interval_ns":CallNS,"go_clear_ns":ClearNS}
+}
+
+func SelectMathProbe(mode int) {
+    if C.work2_math_select(C.int(mode)) != 1 { panic("invalid math probe mode") }
+}
+func MathProbe() map[string]any {
+    var raw [128]C.uchar
+    mode := C.work2_math_bytes(&raw[0])
+    data := make([]byte, 128)
+    for i := range raw {data[i] = byte(raw[i])}
+    return map[string]any{"mode":int(mode), "native_and_common_entry_bytes":data}
+}

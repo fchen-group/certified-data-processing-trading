@@ -1,0 +1,19 @@
+{
+  "purpose": "Exact plaintext bytes from verified SGX integration; re-encrypt and sign for each new transaction. Historical gas is not reused.",
+  "fixtures": [
+    {
+      "name": "T1",
+      "source": "results/execution-integration-20261031/client/results/integration/result-t1.json",
+      "sha256": "c8f6396024d8d0dc0c1864c248596a61e01e4f5f7e5e7012f86c0fcf3eeaf5b5",
+      "bytes": 174,
+      "records": 1000
+    },
+    {
+      "name": "T2",
+      "source": "results/execution-final-20261031/client/results/integration/result-t2.json",
+      "sha256": "ce5ac945cfefd0f73cff5a4a6eefea98c4aefd6149aa1c546252a77637bf6804",
+      "bytes": 36,
+      "records": 1000
+    }
+  ]
+}

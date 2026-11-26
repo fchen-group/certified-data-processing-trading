@@ -1,0 +1,57 @@
+{
+  "source": "admission-certification-20261030",
+  "source_sha256": {
+    "raw.jsonl": "dc76322c8518e81543b1223d36e5f67eb2e7bd1193efb66d0bba727163b411c1",
+    "summary.csv": "7d5717bb3e84628923deb6628680ec2dfa894c98dca9aa4dd2bf88ba174a1f5c",
+    "config.json": "b687f0cf8696561727ccb194e4e1c4aed216560ac0308173658923ddb488af42",
+    "manifest.json": "5880f189a377a003bc58cc164261d74e2a855d71417f1f59d1a04d9edeb27307"
+  },
+  "preview": false,
+  "measurement_schema": "commitment-v2",
+  "validation": {
+    "valid": true,
+    "stage": "linux-client-formal",
+    "timing_processes": 330,
+    "measurement_points": 570,
+    "verified_audits": 840,
+    "summary_rows": 20,
+    "memory_processes": 0,
+    "memory_summary_rows": 0,
+    "all_observations_retained": true,
+    "checks": [
+      "configuration coverage",
+      "source/config hashes",
+      "metadata and correctness flags",
+      "sample counts/positions/digests/unions",
+      "B2 shared snapshots and balanced positions",
+      "independent-process commitments",
+      "all CSV means and sample standard deviations"
+    ]
+  },
+  "reuse": {
+    "n": 10000,
+    "m": 180,
+    "trades": 10,
+    "scope": "certification operations only; both groups construct the commitment once",
+    "modes": {
+      "reuse": {
+        "certifications": 1,
+        "commitment_ms": 13.324466133333333,
+        "cumulative_local_ms": 19.024325533333336,
+        "amortized_local_ms": 1.9024325533333333,
+        "distinct_sampled_positions_mean": 180.0,
+        "cumulative_response_bytes_mean": 221281.6
+      },
+      "reaudit": {
+        "certifications": 10,
+        "commitment_ms": 13.324466133333333,
+        "cumulative_local_ms": 69.8543162,
+        "amortized_local_ms": 6.98543162,
+        "distinct_sampled_positions_mean": 1663.1666666666667,
+        "cumulative_response_bytes_mean": 2213220.9
+      }
+    },
+    "chain_gas": "not included; requires separately verified chain provenance",
+    "expected_distinct_reaudit": 1660.982641415416
+  }
+}

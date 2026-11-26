@@ -1,0 +1,37 @@
+{
+  "purpose": "fixed execution workload; test accuracy is a correctness diagnostic",
+  "python": "3.9.6",
+  "packages": {
+    "numpy": "1.26.4",
+    "scipy": "1.13.1",
+    "scikit-learn": "1.6.1",
+    "joblib": "1.4.2",
+    "threadpoolctl": "3.5.0"
+  },
+  "source_files": {
+    "adult.data": "5b00264637dbfec36bdeaab5676b0b309ff9eb788d63554ca0a249491c86603d",
+    "adult.test": "a2a9044bc167a35b2361efbabec64e89d69ce82d9790d2980119aac5fd7e9c05"
+  },
+  "training_records": 32561,
+  "test_records": 16281,
+  "test_shuffle_seed": 20261030,
+  "feature_dimension": 108,
+  "missing_numeric": "training median",
+  "missing_categorical": "explicit ? category",
+  "unknown_categorical": "all-zero one-hot group",
+  "label_is_feature": false,
+  "estimator": "LogisticRegression",
+  "C": 1.0,
+  "penalty": "l2",
+  "solver": "lbfgs",
+  "tol": 1e-08,
+  "max_iter": 2000,
+  "iterations": 602,
+  "test_accuracy": 0.8531416989128432,
+  "files": {
+    "parameters.json": "06214cea7def2b7053629b17f8abbb5eb1206ae90ed0740f55eddc218bfcde24",
+    "reference.json": "ff6edef3a7135f3d57af0634284e27426988337e23111b977ee84fa6e973f672",
+    "test.csv": "16cd6d9ec884296ab5d061c8d7480f7f1735804e41bbedf11dee960b2c59f116",
+    "transform.json": "d2b0d65361cb1408f3788cc244eb8b63572b5a2b7cc30bf7e0ace920c007d686"
+  }
+}

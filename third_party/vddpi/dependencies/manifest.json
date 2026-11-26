@@ -1,0 +1,50 @@
+{
+  "Python-3.6.9.tar.xz": {
+    "sha256": "5e2f5f554e3f8f7f0296f7e73d8600c4e9acbaee6b2555b83206edf5153870da",
+    "size": 17212164
+  },
+  "runtime-cpython369-image.tar.gz": {
+    "sha256": "902c092d911f0560f7a9d294523b2d252eb1b5452f8332ba1ff55ec1837d779c",
+    "size": 360270342
+  },
+  "wheels/PyJWT-2.4.0-py3-none-any.whl": {
+    "sha256": "72d1d253f32dbd4f5c88eaf1fdc62f3a19f676ccbadb9dbc5d07e951b2b26daf",
+    "size": 18228
+  },
+  "wheels/certifi-2024.6.2-py3-none-any.whl": {
+    "sha256": "ddc6c8ce995e6987e7faf5e3f1b02b302836a0e5d98ece18392cb1a36c72ad56",
+    "size": 164433
+  },
+  "wheels/cffi-1.15.1-cp36-cp36m-manylinux_2_5_x86_64.manylinux1_x86_64.whl": {
+    "sha256": "6975a3fac6bc83c4a65c9f9fcab9e47019a11d3d2cf7f3c0d03431bf145a941e",
+    "size": 402952
+  },
+  "wheels/charset_normalizer-2.0.12-py3-none-any.whl": {
+    "sha256": "6881edbebdb17b39b4eaaa821b438bf6eddffb4468cf344f09f89def34a8b1df",
+    "size": 39623
+  },
+  "wheels/cryptography-3.4.8-cp36-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl": {
+    "sha256": "1eb7bb0df6f6f583dd8e054689def236255161ebbcf62b226454ab9ec663746b",
+    "size": 3157688
+  },
+  "wheels/idna-3.4-py3-none-any.whl": {
+    "sha256": "90b77e79eaa3eba6de819a0c442c0b4ceefc341a7a2ab77d7562bf49f425c5c2",
+    "size": 61538
+  },
+  "wheels/pip-21.3.1-py3-none-any.whl": {
+    "sha256": "deaf32dcd9ab821e359cd8330786bcd077604b5c5730c0b096eda46f95c24a2d",
+    "size": 1723581
+  },
+  "wheels/pycparser-2.21-py2.py3-none-any.whl": {
+    "sha256": "8ee45429555515e1f6b185e78100aea234072576aa43ab53aefcae078162fca9",
+    "size": 118697
+  },
+  "wheels/requests-2.27.1-py2.py3-none-any.whl": {
+    "sha256": "f22fa1e554c9ddfd16e6e41ac79759e17be9e492b3587efa038054674760e72d",
+    "size": 63133
+  },
+  "wheels/urllib3-1.26.20-py2.py3-none-any.whl": {
+    "sha256": "0ed14ccfbf1c30a9072c7ca157e4319b70d65f623e91e7b32fadb2853431016e",
+    "size": 144225
+  }
+}

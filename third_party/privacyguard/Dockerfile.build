@@ -1,0 +1,26 @@
+# Build/signing only. This image cannot provide SGX hardware on an arm64 Mac.
+FROM ghcr.io/edgelesssys/ego-dev@sha256:ec7e09e3187f01cfa3ae8a823970557cf1ac5db92fea5f0b10bcbceacb262301
+# The pinned base provides URTS/enclave-common 2.28. Keep them to preserve
+# its DCAP library dependencies; only the legacy UAE interfaces are added.
+# No attestation service or enclave application is run in this build image.
+USER root
+COPY sgx_linux_x64_sdk_2.27.100.1.bin /tmp/sgx-sdk.bin
+COPY sgx_debian_local_repo.tgz /tmp/sgx-repo.tgz
+COPY libprotobuf23_3.12.4-1ubuntu7.22.04.6_amd64.deb /tmp/libprotobuf23.deb
+RUN printf '%s  %s\n' \
+      8ba7a692ed2a8168e49dab76ea72b1b97a413d463d420b72df511b66e67cd365 /tmp/sgx-sdk.bin \
+      a9afc0277733144c8ddbf5e73e1e86f6a738876dd1d04123935beb3a05e53292 /tmp/sgx-repo.tgz \
+      b3680d038ac8272d3793d7c3eda651b19522127e7679c9c504f7ac548bbdf2ce /tmp/libprotobuf23.deb \
+      | sha256sum -c - \
+    && bash /tmp/sgx-sdk.bin --prefix /opt/intel \
+    && tar -xzf /tmp/sgx-repo.tgz -C /tmp \
+    && dpkg --install \
+      /tmp/libprotobuf23.deb \
+      /tmp/sgx_debian_local_repo/pool/main/libs/libsgx-epid/libsgx-epid_2.27.100.1-jammy1_amd64.deb \
+      /tmp/sgx_debian_local_repo/pool/main/libs/libsgx-launch/libsgx-launch_2.27.100.1-jammy1_amd64.deb \
+      /tmp/sgx_debian_local_repo/pool/main/libs/libsgx-quote-ex/libsgx-quote-ex_2.27.100.1-jammy1_amd64.deb \
+      /tmp/sgx_debian_local_repo/pool/main/libs/libsgx-uae-service/libsgx-uae-service_2.27.100.1-jammy1_amd64.deb \
+    && rm -rf /tmp/sgx-sdk.bin /tmp/sgx-repo.tgz /tmp/libprotobuf23.deb /tmp/sgx_debian_local_repo
+ENV SGX_SDK=/opt/intel/sgxsdk
+ENV PATH=/opt/intel/sgxsdk/bin/x64:$PATH
+WORKDIR /work

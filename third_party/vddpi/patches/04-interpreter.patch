@@ -1,0 +1,170 @@
+--- a/docker/gramine_base/python.c
++++ b/docker/gramine_base/python.c
+@@ -16,131 +16,46 @@
+ #define GEN_CERT_PROGRAM "gen_cert.py"
+ #define GCP_HASH_VALUE "ea68f815873ff35ef09049280a370b032e7f94e50be1c857e15c4124750754ef"
+ 
+-#ifdef __FreeBSD__
+-#include <fenv.h>
+-#endif
++/* Replacement for the unsafe dispatch/hash-check portion of upstream python.c.
++ * call_Py_Main below is retained from upstream. Bootstrap uses stock CPython;
++ * the deployable interpreter never exposes build bypasses or arbitrary -c/-m.
++ */
++static int call_Py_Main(int argc, char **argv);
+ 
+-#ifdef MS_WINDOWS
++static int verify_program(const char *path, const char *expected) {
++    FILE *f = fopen(path, "rb");
++    if (!f) { perror("verified program"); return 0; }
++    SHA256_CTX ctx;
++    unsigned char buf[HASH_BUF_LEN], digest[SHA256_DIGEST_LENGTH];
++    size_t n;
++    if (SHA256_Init(&ctx) != 1) { fclose(f); return 0; }
++    while ((n = fread(buf, 1, sizeof(buf), f)) != 0)
++        if (SHA256_Update(&ctx, buf, n) != 1) { fclose(f); return 0; }
++    if (ferror(f) || SHA256_Final(digest, &ctx) != 1) { fclose(f); return 0; }
++    if (fclose(f) != 0) return 0;
++    char actual[65];
++    for (size_t i = 0; i < sizeof(digest); ++i) snprintf(actual + i*2, 3, "%02x", digest[i]);
++    if (strcmp(actual, expected) != 0) {
++        fprintf(stderr, "Verified program digest mismatch: %s\n", path);
++        return 0;
++    }
++    return 1;
++}
+ 
+-int
+-wmain(int argc, wchar_t **argv)
+-{
+-    return Py_Main(argc, argv);
++int main(int argc, char **argv) {
++    const char *program = DP_PROGRAM, *digest = DP_HASH_VALUE;
++    if (argc == 2 && strcmp(argv[1], "-gencert") == 0) {
++        program = GEN_CERT_PROGRAM; digest = GCP_HASH_VALUE;
++    } else if (!(argc == 1 || (argc == 2 && strcmp(argv[1], DP_PROGRAM) == 0))) {
++        fprintf(stderr, "Only the fixed, measured application may execute\n");
++        return 2;
++    }
++    if (!verify_program(program, digest)) return 3;
++    char *fixed_argv[] = {argv[0], (char *)program, NULL};
++    return call_Py_Main(2, fixed_argv);
+ }
+-#else
+ 
+-int
+-main(int argc, char **argv)
+-{
+-    int verify_res;
+-    char *option_during_build[4][5] = {{"./python", "-E", "-S", "-m", "sysconfig"}, {"./python", "-E", "./setup.py", "build"}, {"./python", "-E", "./setup.py", "install"}, {"./python", "-E", "-m", "ensurepip"}};
+-
+-    if ((!strncmp(argv[1], option_during_build[0][1], sizeof(option_during_build[0][1])) && !strncmp(argv[2], option_during_build[0][2], sizeof(option_during_build[0][2])) && !strncmp(argv[3], option_during_build[0][3], sizeof(option_during_build[0][3])) && !strncmp(argv[4], option_during_build[0][4], sizeof(option_during_build[0][4]))) ||
+-        ((!strncmp(argv[1], option_during_build[1][1], sizeof(option_during_build[1][1])) && !strncmp(argv[2], option_during_build[1][2], sizeof(option_during_build[1][2])) && !strncmp(argv[3], option_during_build[1][3], sizeof(option_during_build[1][3])))) ||
+-        ((!strncmp(argv[1], option_during_build[2][1], sizeof(option_during_build[2][1])) && !strncmp(argv[2], option_during_build[2][2], sizeof(option_during_build[2][2])) && !strncmp(argv[3], option_during_build[2][3], sizeof(option_during_build[2][3])))) || 
+-        ((!strncmp(argv[1], option_during_build[3][1], sizeof(option_during_build[3][1])) && !strncmp(argv[2], option_during_build[3][2], sizeof(option_during_build[3][2])) && !strncmp(argv[3], option_during_build[3][3], sizeof(option_during_build[3][3]))))) {
+-        return call_Py_Main(argc, argv);
+-    }
+- 
+-    if (!strncmp(argv[1], "-gencert", "8")) {
+-        FILE *fp;
+-        const char* fname = GEN_CERT_PROGRAM;
+-
+-        fp = fopen(fname, "r");
+-        if (fp != NULL) {
+-            int fd;
+-            int i;
+-            unsigned char buf[HASH_BUF_LEN];
+-            unsigned char digest[SHA256_DIGEST_LENGTH];
+-            SHA256_CTX sha_ctx;
+-            const char *hash_value = GCP_HASH_VALUE;
+-
+-            fd = fileno(fp);
+-            SHA256_Init(&sha_ctx);
+-            for (;;) {
+-                i = read(fd, buf, HASH_BUF_LEN);
+-                if (i <= 0)
+-                    break;
+-                SHA256_Update(&sha_ctx, buf, (unsigned long)i);
+-            }
+-            SHA256_Final(digest, &sha_ctx);
+-
+-            for (int i = 0; i < sizeof(digest); ++i) {
+-                char *tmp = malloc(sizeof(char) * 3);
+-                sprintf(tmp, "%02x", digest[i]);
+-                if (!(tmp[0] == hash_value[i * 2] && tmp[1] == hash_value[i * 2 + 1])) {
+-                    printf("-----------------------------------------------------------------------------------------------------------------------\n");
+-                    printf("Verification of hash value failed.\n");
+-                    printf("%s is not an appropriate certificate issuance program.\n", GEN_CERT_PROGRAM);
+-                    printf("-----------------------------------------------------------------------------------------------------------------------\n");
+-                    return 1;
+-                }
+-                free(tmp);
+-            }
+-            printf("-----------------------------------------------------------------------------------------------------------------------\n");
+-            printf("Successfully verified the hash value of the certificate issuing program!\n");
+-            printf("sha256(%s): %s\n", GEN_CERT_PROGRAM, GCP_HASH_VALUE);
+-            printf("-----------------------------------------------------------------------------------------------------------------------\n");
+-            fclose(fp);
+-        }
+-
+-        const int GC_PROGRAM_ARGC = 2;
+-        char *gen_cert_argv[GC_PROGRAM_ARGC];
+-        
+-        // [0] ./python [1] ./gen_cert.py
+-        gen_cert_argv[0] = argv[0];
+-        gen_cert_argv[1] = GEN_CERT_PROGRAM;
+-        // gen_cert_argv[2] = argv[2];
+-        // gen, mail_cert_argv[3] = argv[3];
+-        return call_Py_Main(GC_PROGRAM_ARGC, gen_cert_argv);
+-    } else {
+-        FILE *fp;
+-        const char* fname = DP_PROGRAM;
+-
+-        fp = fopen(fname, "r");
+-        if (fp != NULL) {
+-            int fd;
+-            int i;
+-            unsigned char buf[HASH_BUF_LEN];
+-            unsigned char digest[SHA256_DIGEST_LENGTH];
+-            SHA256_CTX sha_ctx;
+-            const char *hash_value = DP_HASH_VALUE;
+-
+-            fd = fileno(fp);
+-            SHA256_Init(&sha_ctx);
+-            for (;;) {
+-                i = read(fd, buf, HASH_BUF_LEN);
+-                if (i <= 0)
+-                    break;
+-                SHA256_Update(&sha_ctx, buf, (unsigned long)i);
+-            }
+-            SHA256_Final(digest, &sha_ctx);
+-
+-            for (int i = 0; i < sizeof(digest); ++i) {
+-                char *tmp = malloc(sizeof(char) * 3);
+-                sprintf(tmp, "%02x", digest[i]);
+-                if (!(tmp[0] == hash_value[i * 2] && tmp[1] == hash_value[i * 2 + 1])) {
+-                    printf("-----------------------------------------------------------------------------------------------------------------------\n");
+-                    printf("Verification of hash value failed.\n");
+-                    printf("%s is not an appropriate data processing program.\n", DP_PROGRAM);
+-                    printf("-----------------------------------------------------------------------------------------------------------------------\n");
+-                    return 1;
+-                }
+-                free(tmp);
+-            }
+-            printf("-----------------------------------------------------------------------------------------------------------------------\n");
+-            printf("Successfully verified the hash value of the data processing program!\n");
+-            printf("sha256(%s): %s\n", DP_PROGRAM, DP_HASH_VALUE);
+-            printf("-----------------------------------------------------------------------------------------------------------------------\n");
+-            fclose(fp);
+-        }
+-        
+-        return call_Py_Main(argc, argv);
+-    }
+-}
+-#endif
+-
+-int call_Py_Main(int argc, char **argv) {
++static int call_Py_Main(int argc, char **argv) {
+ 
+     wchar_t **argv_copy;
+     /* We need a second copy, as Python might modify the first one. */

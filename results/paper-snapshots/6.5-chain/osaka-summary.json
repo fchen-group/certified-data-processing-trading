@@ -1,0 +1,2681 @@
+{
+  "status": "formal_measurement_verified",
+  "scope": "sections 6.3 chain gas and 6.5, explicitly fixed local Osaka EVM",
+  "primary_measurement": "Anvil 1.5.1 actual transaction receipts; Geth v1.17.10 independent offline replay",
+  "counterfactual": "Amsterdam rows are offline rule comparison only, not new Sepolia observations",
+  "checks": {
+    "transactions_verified": 287,
+    "logs_verified": 243,
+    "final_accounts_verified": 5,
+    "final_storage_slots_verified": 648,
+    "membership_proofs_verified_by_go_and_independent_python": 1800,
+    "results_decrypted": 40,
+    "fresh_result_ciphertexts": 40,
+    "tampered_gas_rejected": true,
+    "readonly_verifiers_sent_no_transactions": true,
+    "source_and_frozen_matrix_unchanged": true,
+    "manuscript_and_figures_unchanged": true,
+    "local_node_stopped": true
+  },
+  "certification": {
+    "chain_id": 31337,
+    "contract": "0xcd0c4bfca85a1645fba8a4223ccc86d929d37f88",
+    "local_verification_anchor": 31,
+    "audits": 10,
+    "transactions_including_deployment": 31,
+    "sample_size": 180,
+    "independent_trajectories": 1,
+    "deployment_gas": 1757039,
+    "first_certification_gas": 436414,
+    "later_certification_gas": {
+      "count": 9,
+      "mean": 382235,
+      "min": 382235,
+      "max": 382235
+    },
+    "certification_total_gas": 3876529,
+    "total_fee_wei_including_deployment": "8371488843413313",
+    "proofs_independently_verified": 1800,
+    "cumulative_samples": 1800,
+    "distinct_sampled_records": 1654,
+    "scope": "Actual gas from one continuous trajectory; prefixes are not independent repeats; no protocol latency claim; no extrapolation above k=10. Local Osaka receipts; no public-chain finality claim.",
+    "per_audit": [
+      {
+        "round": 1,
+        "openAudit": 275624,
+        "fixChallenge": 63136,
+        "decideAudit": 97654,
+        "total_gas": 436414,
+        "cumulative_distinct_records": 180,
+        "transaction_hashes": [
+          "0x861e94956b61bbbc808e9d2ba4fc8df779e992a330c8fca0c9da0622fee9d6e8",
+          "0xd38f84a860fac1a1b10491cfe54e3c604a60a1e040528b5735d2712189263e89",
+          "0xbb7d6cf3299d7740b7567dcc251fe8efb008c040eeac2c3bc885eaf4ce86cba2"
+        ]
+      },
+      {
+        "round": 2,
+        "openAudit": 238545,
+        "fixChallenge": 63136,
+        "decideAudit": 80554,
+        "total_gas": 382235,
+        "cumulative_distinct_records": 357,
+        "transaction_hashes": [
+          "0xfccb9d8079ef4bc494418c971ed2ca2363b90a44ca0c48a013a85aae021a77c5",
+          "0xd0591f4961fce91dcf1781197a4bba0bd12ca7e94678ad02fb3ad3cbdfb449cf",
+          "0xf2891dc7adeb1990e6926ff3f3d584435c81e5254dbe91359e11c4c8aba551a3"
+        ]
+      },
+      {
+        "round": 3,
+        "openAudit": 238545,
+        "fixChallenge": 63136,
+        "decideAudit": 80554,
+        "total_gas": 382235,
+        "cumulative_distinct_records": 531,
+        "transaction_hashes": [
+          "0xb1ae7b1995263759f0c850ffc10203c8b2214d5036ad551e57f0a67f73964b6d",
+          "0x511057aa8e9100f5ba0d13e628f2c5abbcd829eebb02cabce7a1c61c1ab169bb",
+          "0xa91651e702634fd2686ac17e4951fd7fb9cb34f8b157ce0db0ecad9d673243f9"
+        ]
+      },
+      {
+        "round": 4,
+        "openAudit": 238545,
+        "fixChallenge": 63136,
+        "decideAudit": 80554,
+        "total_gas": 382235,
+        "cumulative_distinct_records": 703,
+        "transaction_hashes": [
+          "0x3ef14d200655b060df3f63f018bc7afdb69f205ef3c2db15f6eca50a958d0d32",
+          "0x492add1c0de4b4ec247228b706a1626f855d4655d0d4254ec2cee83b86648f16",
+          "0x9bc676bd35814e9422d3f9749228303a6bd2dc4d77ac32b7a74384e7661a402a"
+        ]
+      },
+      {
+        "round": 5,
+        "openAudit": 238545,
+        "fixChallenge": 63136,
+        "decideAudit": 80554,
+        "total_gas": 382235,
+        "cumulative_distinct_records": 869,
+        "transaction_hashes": [
+          "0xb9a69063c7dfd1a80be67dad532683abbbd17eaffd12e253d4d961e7818f03c9",
+          "0x6ec351fa3423624821d4693e88ff41d1a66e1291db6d6eea004f20c9cd4ab917",
+          "0xe9991b5a04ab93982dcf6df9c8a3e06390deb804b3e68eac59b218efbe5f55db"
+        ]
+      },
+      {
+        "round": 6,
+        "openAudit": 238545,
+        "fixChallenge": 63136,
+        "decideAudit": 80554,
+        "total_gas": 382235,
+        "cumulative_distinct_records": 1030,
+        "transaction_hashes": [
+          "0xe479cf88688a134677913ed0f60bd0f13e34ff97d9afcb6c2f61f28204b80017",
+          "0xf6d3792c42cc04462d106da25f037740415d99c90d08185618cbcd462414aec4",
+          "0xcbb483624c36d11cc890f71d4c1bde659909e5f70185cab96e0257c0f2e4e4b7"
+        ]
+      },
+      {
+        "round": 7,
+        "openAudit": 238545,
+        "fixChallenge": 63136,
+        "decideAudit": 80554,
+        "total_gas": 382235,
+        "cumulative_distinct_records": 1192,
+        "transaction_hashes": [
+          "0x563f876243b19266947e113bb32b7c408936f9934212f00f45464362b68f0983",
+          "0x637696de518defb90d9b1d19e7283e8ae9bb13d03f594eb3365185a1120f564d",
+          "0x361ed56ea498a086e9285e05c0f429a66a5a4bf1e8a7fde3e5d49511fd54ce20"
+        ]
+      },
+      {
+        "round": 8,
+        "openAudit": 238545,
+        "fixChallenge": 63136,
+        "decideAudit": 80554,
+        "total_gas": 382235,
+        "cumulative_distinct_records": 1347,
+        "transaction_hashes": [
+          "0xf1d63aa96fd48a2ad152c690bc8e02ba55dbacecb8c74bb81584fd0b3b70a646",
+          "0x17b6b17ccac2c3d005cc8f2f1a544c7df0b00b7e5b530c198a81dbc7e717a001",
+          "0xdff5855dbd2dc3866a9b09face29b60c5be04dd793a3cc1a703101c65e77dc9c"
+        ]
+      },
+      {
+        "round": 9,
+        "openAudit": 238545,
+        "fixChallenge": 63136,
+        "decideAudit": 80554,
+        "total_gas": 382235,
+        "cumulative_distinct_records": 1499,
+        "transaction_hashes": [
+          "0x286fa965c8527226985008614dcdc410e59f33af1c0b93773ab23abeabc2d995",
+          "0x4bce2cc6fb9edc1e9b42058c83330a0067d7704faf2f77e843edfb9830bc9bb5",
+          "0xd29a044b31cc21269730ededaf2ed6cead9ae69f11da808939d5513e5f40bb0d"
+        ]
+      },
+      {
+        "round": 10,
+        "openAudit": 238545,
+        "fixChallenge": 63136,
+        "decideAudit": 80554,
+        "total_gas": 382235,
+        "cumulative_distinct_records": 1654,
+        "transaction_hashes": [
+          "0x3b8f3c2ed28122c129ecb7f99f6c85e08bcf097f7f64d7004804dbd6f030d721",
+          "0x10c4f4a9029079c8a06cc1a42c99ccfeb34e5b54aa09e38000903a945241d901",
+          "0x006bd0e91b9ba0fc902f7a5319ad68496e0ec93f15e54a931e79064f20ed3c38"
+        ]
+      }
+    ],
+    "prefixes": [
+      {
+        "k": 1,
+        "reuse_certification_gas": 436414,
+        "reaudit_certification_gas": 436414,
+        "reuse_amortized_gas": 436414.0,
+        "reaudit_amortized_gas": 436414.0,
+        "saved_fraction": 0.0
+      },
+      {
+        "k": 2,
+        "reuse_certification_gas": 436414,
+        "reaudit_certification_gas": 818649,
+        "reuse_amortized_gas": 218207.0,
+        "reaudit_amortized_gas": 409324.5,
+        "saved_fraction": 0.4669095057833088
+      },
+      {
+        "k": 5,
+        "reuse_certification_gas": 436414,
+        "reaudit_certification_gas": 1965354,
+        "reuse_amortized_gas": 87282.8,
+        "reaudit_amortized_gas": 393070.8,
+        "saved_fraction": 0.7779463648787954
+      },
+      {
+        "k": 10,
+        "reuse_certification_gas": 436414,
+        "reaudit_certification_gas": 3876529,
+        "reuse_amortized_gas": 43641.4,
+        "reaudit_amortized_gas": 387652.9,
+        "saved_fraction": 0.8874214535735447
+      }
+    ]
+  },
+  "trade": {
+    "scope": "formal local Osaka gas measurement; not a Sepolia observation",
+    "verification": "offline arithmetic audit of receipts; chain checks and decryption are performed by tradegasbench",
+    "source_sha256": {
+      "run.json": "739127fa01b9c4843207e6413e8649d187b00f3123b23f1c3c42c5b86cc2c7cc",
+      "verification.json": "04b24c82d43ccf0d78716a7e480c904f5b0a232493714c39e98dcb1f509aa691",
+      "setup-receipts.json": "7d44ec295982a1640e24cf9d13cf5b4b1389cb7c598b439bb5a01862e221e052"
+    },
+    "transactions": 256,
+    "unique_ciphertexts": 40,
+    "counter_preparation": [
+      {
+        "tid": 1,
+        "register_gas": 254974
+      }
+    ],
+    "groups": {
+      "D1/T1": {
+        "samples": 5,
+        "operations_gas": {
+          "confirmKey/DB": {
+            "n": 5,
+            "mean": 65900,
+            "min": 65900,
+            "max": 65900
+          },
+          "confirmKey/DO": {
+            "n": 5,
+            "mean": 60376,
+            "min": 60376,
+            "max": 60376
+          },
+          "deposit": {
+            "n": 5,
+            "mean": 38032,
+            "min": 38032,
+            "max": 38032
+          },
+          "registerTrade": {
+            "n": 5,
+            "mean": 237874,
+            "min": 237874,
+            "max": 237874
+          },
+          "settle": {
+            "n": 5,
+            "mean": 93842.2,
+            "min": 93819,
+            "max": 93857
+          },
+          "withdraw": {
+            "n": 5,
+            "mean": 45756,
+            "min": 45756,
+            "max": 45756
+          }
+        },
+        "plaintext_bytes": 174,
+        "ciphertext_bytes": 222,
+        "settlement_calldata_bytes": 516,
+        "normal_five_call_gas": {
+          "n": 5,
+          "mean": 496024.2,
+          "min": 496001,
+          "max": 496039
+        }
+      },
+      "D1/T2": {
+        "samples": 5,
+        "operations_gas": {
+          "confirmKey/DB": {
+            "n": 5,
+            "mean": 65900,
+            "min": 65900,
+            "max": 65900
+          },
+          "confirmKey/DO": {
+            "n": 5,
+            "mean": 60376,
+            "min": 60376,
+            "max": 60376
+          },
+          "deposit": {
+            "n": 5,
+            "mean": 38032,
+            "min": 38032,
+            "max": 38032
+          },
+          "registerTrade": {
+            "n": 5,
+            "mean": 237874,
+            "min": 237874,
+            "max": 237874
+          },
+          "settle": {
+            "n": 5,
+            "mean": 90581,
+            "min": 90581,
+            "max": 90581
+          },
+          "withdraw": {
+            "n": 5,
+            "mean": 45756,
+            "min": 45756,
+            "max": 45756
+          }
+        },
+        "plaintext_bytes": 36,
+        "ciphertext_bytes": 84,
+        "settlement_calldata_bytes": 388,
+        "normal_five_call_gas": {
+          "n": 5,
+          "mean": 492763,
+          "min": 492763,
+          "max": 492763
+        }
+      },
+      "D2/128": {
+        "samples": 5,
+        "operations_gas": {
+          "confirmKey/DB": {
+            "n": 5,
+            "mean": 65900,
+            "min": 65900,
+            "max": 65900
+          },
+          "confirmKey/DO": {
+            "n": 5,
+            "mean": 60376,
+            "min": 60376,
+            "max": 60376
+          },
+          "deposit": {
+            "n": 5,
+            "mean": 38032,
+            "min": 38032,
+            "max": 38032
+          },
+          "registerTrade": {
+            "n": 5,
+            "mean": 237874,
+            "min": 237874,
+            "max": 237874
+          },
+          "settle": {
+            "n": 5,
+            "mean": 92885.4,
+            "min": 92853,
+            "max": 92903
+          },
+          "withdraw": {
+            "n": 5,
+            "mean": 45756,
+            "min": 45756,
+            "max": 45756
+          }
+        },
+        "plaintext_bytes": 128,
+        "ciphertext_bytes": 176,
+        "settlement_calldata_bytes": 484,
+        "normal_five_call_gas": {
+          "n": 5,
+          "mean": 495067.4,
+          "min": 495035,
+          "max": 495085
+        }
+      },
+      "D2/512": {
+        "samples": 5,
+        "operations_gas": {
+          "confirmKey/DB": {
+            "n": 5,
+            "mean": 65900,
+            "min": 65900,
+            "max": 65900
+          },
+          "confirmKey/DO": {
+            "n": 5,
+            "mean": 60376,
+            "min": 60376,
+            "max": 60376
+          },
+          "deposit": {
+            "n": 5,
+            "mean": 38032,
+            "min": 38032,
+            "max": 38032
+          },
+          "registerTrade": {
+            "n": 5,
+            "mean": 237874,
+            "min": 237874,
+            "max": 237874
+          },
+          "settle": {
+            "n": 5,
+            "mean": 102309.8,
+            "min": 102265,
+            "max": 102327
+          },
+          "withdraw": {
+            "n": 5,
+            "mean": 45756,
+            "min": 45756,
+            "max": 45756
+          }
+        },
+        "plaintext_bytes": 512,
+        "ciphertext_bytes": 560,
+        "settlement_calldata_bytes": 868,
+        "normal_five_call_gas": {
+          "n": 5,
+          "mean": 504491.8,
+          "min": 504447,
+          "max": 504509
+        }
+      },
+      "D2/1024": {
+        "samples": 5,
+        "operations_gas": {
+          "confirmKey/DB": {
+            "n": 5,
+            "mean": 65900,
+            "min": 65900,
+            "max": 65900
+          },
+          "confirmKey/DO": {
+            "n": 5,
+            "mean": 60376,
+            "min": 60376,
+            "max": 60376
+          },
+          "deposit": {
+            "n": 5,
+            "mean": 38032,
+            "min": 38032,
+            "max": 38032
+          },
+          "registerTrade": {
+            "n": 5,
+            "mean": 237874,
+            "min": 237874,
+            "max": 237874
+          },
+          "settle": {
+            "n": 5,
+            "mean": 114882.8,
+            "min": 114828,
+            "max": 114912
+          },
+          "withdraw": {
+            "n": 5,
+            "mean": 45756,
+            "min": 45756,
+            "max": 45756
+          }
+        },
+        "plaintext_bytes": 1024,
+        "ciphertext_bytes": 1072,
+        "settlement_calldata_bytes": 1380,
+        "normal_five_call_gas": {
+          "n": 5,
+          "mean": 517064.8,
+          "min": 517010,
+          "max": 517094
+        }
+      },
+      "D2/4096": {
+        "samples": 5,
+        "operations_gas": {
+          "confirmKey/DB": {
+            "n": 5,
+            "mean": 65900,
+            "min": 65900,
+            "max": 65900
+          },
+          "confirmKey/DO": {
+            "n": 5,
+            "mean": 60376,
+            "min": 60376,
+            "max": 60376
+          },
+          "deposit": {
+            "n": 5,
+            "mean": 38032,
+            "min": 38032,
+            "max": 38032
+          },
+          "registerTrade": {
+            "n": 5,
+            "mean": 237874,
+            "min": 237874,
+            "max": 237874
+          },
+          "settle": {
+            "n": 5,
+            "mean": 192522,
+            "min": 192270,
+            "max": 192840
+          },
+          "withdraw": {
+            "n": 5,
+            "mean": 45756,
+            "min": 45756,
+            "max": 45756
+          }
+        },
+        "plaintext_bytes": 4096,
+        "ciphertext_bytes": 4144,
+        "settlement_calldata_bytes": 4452,
+        "normal_five_call_gas": {
+          "n": 5,
+          "mean": 594704,
+          "min": 594452,
+          "max": 595022
+        }
+      },
+      "D2/16384": {
+        "samples": 5,
+        "operations_gas": {
+          "confirmKey/DB": {
+            "n": 5,
+            "mean": 65900,
+            "min": 65900,
+            "max": 65900
+          },
+          "confirmKey/DO": {
+            "n": 5,
+            "mean": 60376,
+            "min": 60376,
+            "max": 60376
+          },
+          "deposit": {
+            "n": 5,
+            "mean": 38032,
+            "min": 38032,
+            "max": 38032
+          },
+          "registerTrade": {
+            "n": 5,
+            "mean": 237874,
+            "min": 237874,
+            "max": 237874
+          },
+          "settle": {
+            "n": 5,
+            "mean": 682632,
+            "min": 682290,
+            "max": 682980
+          },
+          "withdraw": {
+            "n": 5,
+            "mean": 45756,
+            "min": 45756,
+            "max": 45756
+          }
+        },
+        "plaintext_bytes": 16384,
+        "ciphertext_bytes": 16432,
+        "settlement_calldata_bytes": 16740,
+        "normal_five_call_gas": {
+          "n": 5,
+          "mean": 1084814,
+          "min": 1084472,
+          "max": 1085162
+        }
+      },
+      "D2/65536": {
+        "samples": 5,
+        "operations_gas": {
+          "confirmKey/DB": {
+            "n": 5,
+            "mean": 65900,
+            "min": 65900,
+            "max": 65900
+          },
+          "confirmKey/DO": {
+            "n": 5,
+            "mean": 60376,
+            "min": 60376,
+            "max": 60376
+          },
+          "deposit": {
+            "n": 5,
+            "mean": 38032,
+            "min": 38032,
+            "max": 38032
+          },
+          "registerTrade": {
+            "n": 5,
+            "mean": 237874,
+            "min": 237874,
+            "max": 237874
+          },
+          "settle": {
+            "n": 5,
+            "mean": 2643210,
+            "min": 2642490,
+            "max": 2643810
+          },
+          "withdraw": {
+            "n": 5,
+            "mean": 45756,
+            "min": 45756,
+            "max": 45756
+          }
+        },
+        "plaintext_bytes": 65536,
+        "ciphertext_bytes": 65584,
+        "settlement_calldata_bytes": 65892,
+        "normal_five_call_gas": {
+          "n": 5,
+          "mean": 3045392,
+          "min": 3044672,
+          "max": 3045992
+        }
+      },
+      "refund": {
+        "samples": 3,
+        "operations_gas": {
+          "confirmKey/DB": {
+            "n": 3,
+            "mean": 65900,
+            "min": 65900,
+            "max": 65900
+          },
+          "confirmKey/DO": {
+            "n": 3,
+            "mean": 60376,
+            "min": 60376,
+            "max": 60376
+          },
+          "deposit": {
+            "n": 3,
+            "mean": 38032,
+            "min": 38032,
+            "max": 38032
+          },
+          "registerTrade": {
+            "n": 3,
+            "mean": 237862,
+            "min": 237862,
+            "max": 237862
+          },
+          "timeoutRefund": {
+            "n": 3,
+            "mean": 51312,
+            "min": 51312,
+            "max": 51312
+          }
+        }
+      }
+    },
+    "deployment_gas": 1757039,
+    "execution_rule": "Osaka"
+  },
+  "execution_comparison": {
+    "deployment": {
+      "Osaka": {
+        "deploy": {
+          "n": 1,
+          "mean": 1757039,
+          "min": 1757039,
+          "max": 1757039
+        }
+      },
+      "Amsterdam": {
+        "deploy": {
+          "n": 1,
+          "mean": 12388201,
+          "min": 12388201,
+          "max": 12388201
+        }
+      }
+    },
+    "certification/1": {
+      "Osaka": {
+        "openAudit": {
+          "n": 1,
+          "mean": 275624,
+          "min": 275624,
+          "max": 275624
+        },
+        "fixChallenge": {
+          "n": 1,
+          "mean": 63136,
+          "min": 63136,
+          "max": 63136
+        },
+        "decideAudit": {
+          "n": 1,
+          "mean": 97654,
+          "min": 97654,
+          "max": 97654
+        }
+      },
+      "Amsterdam": {
+        "openAudit": {
+          "n": 1,
+          "mean": 1237144,
+          "min": 1237144,
+          "max": 1237144
+        },
+        "fixChallenge": {
+          "n": 1,
+          "mean": 159456,
+          "min": 159456,
+          "max": 159456
+        },
+        "decideAudit": {
+          "n": 1,
+          "mean": 362714,
+          "min": 362714,
+          "max": 362714
+        }
+      }
+    },
+    "certification/2": {
+      "Osaka": {
+        "openAudit": {
+          "n": 1,
+          "mean": 238545,
+          "min": 238545,
+          "max": 238545
+        },
+        "fixChallenge": {
+          "n": 1,
+          "mean": 63136,
+          "min": 63136,
+          "max": 63136
+        },
+        "decideAudit": {
+          "n": 1,
+          "mean": 80554,
+          "min": 80554,
+          "max": 80554
+        }
+      },
+      "Amsterdam": {
+        "openAudit": {
+          "n": 1,
+          "mean": 1031225,
+          "min": 1031225,
+          "max": 1031225
+        },
+        "fixChallenge": {
+          "n": 1,
+          "mean": 159456,
+          "min": 159456,
+          "max": 159456
+        },
+        "decideAudit": {
+          "n": 1,
+          "mean": 264794,
+          "min": 264794,
+          "max": 264794
+        }
+      }
+    },
+    "certification/3": {
+      "Osaka": {
+        "openAudit": {
+          "n": 1,
+          "mean": 238545,
+          "min": 238545,
+          "max": 238545
+        },
+        "fixChallenge": {
+          "n": 1,
+          "mean": 63136,
+          "min": 63136,
+          "max": 63136
+        },
+        "decideAudit": {
+          "n": 1,
+          "mean": 80554,
+          "min": 80554,
+          "max": 80554
+        }
+      },
+      "Amsterdam": {
+        "openAudit": {
+          "n": 1,
+          "mean": 1031225,
+          "min": 1031225,
+          "max": 1031225
+        },
+        "fixChallenge": {
+          "n": 1,
+          "mean": 159456,
+          "min": 159456,
+          "max": 159456
+        },
+        "decideAudit": {
+          "n": 1,
+          "mean": 264794,
+          "min": 264794,
+          "max": 264794
+        }
+      }
+    },
+    "certification/4": {
+      "Osaka": {
+        "openAudit": {
+          "n": 1,
+          "mean": 238545,
+          "min": 238545,
+          "max": 238545
+        },
+        "fixChallenge": {
+          "n": 1,
+          "mean": 63136,
+          "min": 63136,
+          "max": 63136
+        },
+        "decideAudit": {
+          "n": 1,
+          "mean": 80554,
+          "min": 80554,
+          "max": 80554
+        }
+      },
+      "Amsterdam": {
+        "openAudit": {
+          "n": 1,
+          "mean": 1031225,
+          "min": 1031225,
+          "max": 1031225
+        },
+        "fixChallenge": {
+          "n": 1,
+          "mean": 159456,
+          "min": 159456,
+          "max": 159456
+        },
+        "decideAudit": {
+          "n": 1,
+          "mean": 264794,
+          "min": 264794,
+          "max": 264794
+        }
+      }
+    },
+    "certification/5": {
+      "Osaka": {
+        "openAudit": {
+          "n": 1,
+          "mean": 238545,
+          "min": 238545,
+          "max": 238545
+        },
+        "fixChallenge": {
+          "n": 1,
+          "mean": 63136,
+          "min": 63136,
+          "max": 63136
+        },
+        "decideAudit": {
+          "n": 1,
+          "mean": 80554,
+          "min": 80554,
+          "max": 80554
+        }
+      },
+      "Amsterdam": {
+        "openAudit": {
+          "n": 1,
+          "mean": 1031225,
+          "min": 1031225,
+          "max": 1031225
+        },
+        "fixChallenge": {
+          "n": 1,
+          "mean": 159456,
+          "min": 159456,
+          "max": 159456
+        },
+        "decideAudit": {
+          "n": 1,
+          "mean": 264794,
+          "min": 264794,
+          "max": 264794
+        }
+      }
+    },
+    "certification/6": {
+      "Osaka": {
+        "openAudit": {
+          "n": 1,
+          "mean": 238545,
+          "min": 238545,
+          "max": 238545
+        },
+        "fixChallenge": {
+          "n": 1,
+          "mean": 63136,
+          "min": 63136,
+          "max": 63136
+        },
+        "decideAudit": {
+          "n": 1,
+          "mean": 80554,
+          "min": 80554,
+          "max": 80554
+        }
+      },
+      "Amsterdam": {
+        "openAudit": {
+          "n": 1,
+          "mean": 1031225,
+          "min": 1031225,
+          "max": 1031225
+        },
+        "fixChallenge": {
+          "n": 1,
+          "mean": 159456,
+          "min": 159456,
+          "max": 159456
+        },
+        "decideAudit": {
+          "n": 1,
+          "mean": 264794,
+          "min": 264794,
+          "max": 264794
+        }
+      }
+    },
+    "certification/7": {
+      "Osaka": {
+        "openAudit": {
+          "n": 1,
+          "mean": 238545,
+          "min": 238545,
+          "max": 238545
+        },
+        "fixChallenge": {
+          "n": 1,
+          "mean": 63136,
+          "min": 63136,
+          "max": 63136
+        },
+        "decideAudit": {
+          "n": 1,
+          "mean": 80554,
+          "min": 80554,
+          "max": 80554
+        }
+      },
+      "Amsterdam": {
+        "openAudit": {
+          "n": 1,
+          "mean": 1031225,
+          "min": 1031225,
+          "max": 1031225
+        },
+        "fixChallenge": {
+          "n": 1,
+          "mean": 159456,
+          "min": 159456,
+          "max": 159456
+        },
+        "decideAudit": {
+          "n": 1,
+          "mean": 264794,
+          "min": 264794,
+          "max": 264794
+        }
+      }
+    },
+    "certification/8": {
+      "Osaka": {
+        "openAudit": {
+          "n": 1,
+          "mean": 238545,
+          "min": 238545,
+          "max": 238545
+        },
+        "fixChallenge": {
+          "n": 1,
+          "mean": 63136,
+          "min": 63136,
+          "max": 63136
+        },
+        "decideAudit": {
+          "n": 1,
+          "mean": 80554,
+          "min": 80554,
+          "max": 80554
+        }
+      },
+      "Amsterdam": {
+        "openAudit": {
+          "n": 1,
+          "mean": 1031225,
+          "min": 1031225,
+          "max": 1031225
+        },
+        "fixChallenge": {
+          "n": 1,
+          "mean": 159456,
+          "min": 159456,
+          "max": 159456
+        },
+        "decideAudit": {
+          "n": 1,
+          "mean": 264794,
+          "min": 264794,
+          "max": 264794
+        }
+      }
+    },
+    "certification/9": {
+      "Osaka": {
+        "openAudit": {
+          "n": 1,
+          "mean": 238545,
+          "min": 238545,
+          "max": 238545
+        },
+        "fixChallenge": {
+          "n": 1,
+          "mean": 63136,
+          "min": 63136,
+          "max": 63136
+        },
+        "decideAudit": {
+          "n": 1,
+          "mean": 80554,
+          "min": 80554,
+          "max": 80554
+        }
+      },
+      "Amsterdam": {
+        "openAudit": {
+          "n": 1,
+          "mean": 1031225,
+          "min": 1031225,
+          "max": 1031225
+        },
+        "fixChallenge": {
+          "n": 1,
+          "mean": 159456,
+          "min": 159456,
+          "max": 159456
+        },
+        "decideAudit": {
+          "n": 1,
+          "mean": 264794,
+          "min": 264794,
+          "max": 264794
+        }
+      }
+    },
+    "certification/10": {
+      "Osaka": {
+        "openAudit": {
+          "n": 1,
+          "mean": 238545,
+          "min": 238545,
+          "max": 238545
+        },
+        "fixChallenge": {
+          "n": 1,
+          "mean": 63136,
+          "min": 63136,
+          "max": 63136
+        },
+        "decideAudit": {
+          "n": 1,
+          "mean": 80554,
+          "min": 80554,
+          "max": 80554
+        }
+      },
+      "Amsterdam": {
+        "openAudit": {
+          "n": 1,
+          "mean": 1031225,
+          "min": 1031225,
+          "max": 1031225
+        },
+        "fixChallenge": {
+          "n": 1,
+          "mean": 159456,
+          "min": 159456,
+          "max": 159456
+        },
+        "decideAudit": {
+          "n": 1,
+          "mean": 264794,
+          "min": 264794,
+          "max": 264794
+        }
+      }
+    },
+    "preparation": {
+      "Osaka": {
+        "registerTrade": {
+          "n": 1,
+          "mean": 254974,
+          "min": 254974,
+          "max": 254974
+        }
+      },
+      "Amsterdam": {
+        "registerTrade": {
+          "n": 1,
+          "mean": 1128674,
+          "min": 1128674,
+          "max": 1128674
+        }
+      }
+    },
+    "D1/T1": {
+      "Osaka": {
+        "registerTrade": {
+          "n": 5,
+          "mean": 237874,
+          "min": 237874,
+          "max": 237874
+        },
+        "deposit": {
+          "n": 5,
+          "mean": 38032,
+          "min": 38032,
+          "max": 38032
+        },
+        "confirmKey/DO": {
+          "n": 5,
+          "mean": 60376,
+          "min": 60376,
+          "max": 60376
+        },
+        "confirmKey/DB": {
+          "n": 5,
+          "mean": 65900,
+          "min": 65900,
+          "max": 65900
+        },
+        "settle": {
+          "n": 5,
+          "mean": 93842.2,
+          "min": 93819,
+          "max": 93857
+        },
+        "withdraw": {
+          "n": 5,
+          "mean": 45756,
+          "min": 45756,
+          "max": 45756
+        },
+        "normal_total": {
+          "n": 5,
+          "mean": 496024.2,
+          "min": 496001,
+          "max": 496039
+        }
+      },
+      "Amsterdam": {
+        "registerTrade": {
+          "n": 5,
+          "mean": 1030754,
+          "min": 1030754,
+          "max": 1030754
+        },
+        "deposit": {
+          "n": 5,
+          "mean": 52432,
+          "min": 52432,
+          "max": 52432
+        },
+        "confirmKey/DO": {
+          "n": 5,
+          "mean": 137590,
+          "min": 137590,
+          "max": 137590
+        },
+        "confirmKey/DB": {
+          "n": 5,
+          "mean": 151694,
+          "min": 151694,
+          "max": 151694
+        },
+        "settle": {
+          "n": 5,
+          "mean": 270982.2,
+          "min": 270959,
+          "max": 270997
+        },
+        "withdraw": {
+          "n": 5,
+          "mean": 40636,
+          "min": 40636,
+          "max": 40636
+        },
+        "normal_total": {
+          "n": 5,
+          "mean": 1643452.2,
+          "min": 1643429,
+          "max": 1643467
+        }
+      }
+    },
+    "D1/T2": {
+      "Osaka": {
+        "registerTrade": {
+          "n": 5,
+          "mean": 237874,
+          "min": 237874,
+          "max": 237874
+        },
+        "deposit": {
+          "n": 5,
+          "mean": 38032,
+          "min": 38032,
+          "max": 38032
+        },
+        "confirmKey/DO": {
+          "n": 5,
+          "mean": 60376,
+          "min": 60376,
+          "max": 60376
+        },
+        "confirmKey/DB": {
+          "n": 5,
+          "mean": 65900,
+          "min": 65900,
+          "max": 65900
+        },
+        "settle": {
+          "n": 5,
+          "mean": 90581,
+          "min": 90581,
+          "max": 90581
+        },
+        "withdraw": {
+          "n": 5,
+          "mean": 45756,
+          "min": 45756,
+          "max": 45756
+        },
+        "normal_total": {
+          "n": 5,
+          "mean": 492763,
+          "min": 492763,
+          "max": 492763
+        }
+      },
+      "Amsterdam": {
+        "registerTrade": {
+          "n": 5,
+          "mean": 1030754,
+          "min": 1030754,
+          "max": 1030754
+        },
+        "deposit": {
+          "n": 5,
+          "mean": 52432,
+          "min": 52432,
+          "max": 52432
+        },
+        "confirmKey/DO": {
+          "n": 5,
+          "mean": 137590,
+          "min": 137590,
+          "max": 137590
+        },
+        "confirmKey/DB": {
+          "n": 5,
+          "mean": 151694,
+          "min": 151694,
+          "max": 151694
+        },
+        "settle": {
+          "n": 5,
+          "mean": 267721,
+          "min": 267721,
+          "max": 267721
+        },
+        "withdraw": {
+          "n": 5,
+          "mean": 40636,
+          "min": 40636,
+          "max": 40636
+        },
+        "normal_total": {
+          "n": 5,
+          "mean": 1640191,
+          "min": 1640191,
+          "max": 1640191
+        }
+      }
+    },
+    "D2/128": {
+      "Osaka": {
+        "registerTrade": {
+          "n": 5,
+          "mean": 237874,
+          "min": 237874,
+          "max": 237874
+        },
+        "deposit": {
+          "n": 5,
+          "mean": 38032,
+          "min": 38032,
+          "max": 38032
+        },
+        "confirmKey/DO": {
+          "n": 5,
+          "mean": 60376,
+          "min": 60376,
+          "max": 60376
+        },
+        "confirmKey/DB": {
+          "n": 5,
+          "mean": 65900,
+          "min": 65900,
+          "max": 65900
+        },
+        "settle": {
+          "n": 5,
+          "mean": 92885.4,
+          "min": 92853,
+          "max": 92903
+        },
+        "withdraw": {
+          "n": 5,
+          "mean": 45756,
+          "min": 45756,
+          "max": 45756
+        },
+        "normal_total": {
+          "n": 5,
+          "mean": 495067.4,
+          "min": 495035,
+          "max": 495085
+        }
+      },
+      "Amsterdam": {
+        "registerTrade": {
+          "n": 5,
+          "mean": 1030754,
+          "min": 1030754,
+          "max": 1030754
+        },
+        "deposit": {
+          "n": 5,
+          "mean": 52432,
+          "min": 52432,
+          "max": 52432
+        },
+        "confirmKey/DO": {
+          "n": 5,
+          "mean": 137590,
+          "min": 137590,
+          "max": 137590
+        },
+        "confirmKey/DB": {
+          "n": 5,
+          "mean": 151694,
+          "min": 151694,
+          "max": 151694
+        },
+        "settle": {
+          "n": 5,
+          "mean": 270025.4,
+          "min": 269993,
+          "max": 270043
+        },
+        "withdraw": {
+          "n": 5,
+          "mean": 40636,
+          "min": 40636,
+          "max": 40636
+        },
+        "normal_total": {
+          "n": 5,
+          "mean": 1642495.4,
+          "min": 1642463,
+          "max": 1642513
+        }
+      }
+    },
+    "D2/512": {
+      "Osaka": {
+        "registerTrade": {
+          "n": 5,
+          "mean": 237874,
+          "min": 237874,
+          "max": 237874
+        },
+        "deposit": {
+          "n": 5,
+          "mean": 38032,
+          "min": 38032,
+          "max": 38032
+        },
+        "confirmKey/DO": {
+          "n": 5,
+          "mean": 60376,
+          "min": 60376,
+          "max": 60376
+        },
+        "confirmKey/DB": {
+          "n": 5,
+          "mean": 65900,
+          "min": 65900,
+          "max": 65900
+        },
+        "settle": {
+          "n": 5,
+          "mean": 102309.8,
+          "min": 102265,
+          "max": 102327
+        },
+        "withdraw": {
+          "n": 5,
+          "mean": 45756,
+          "min": 45756,
+          "max": 45756
+        },
+        "normal_total": {
+          "n": 5,
+          "mean": 504491.8,
+          "min": 504447,
+          "max": 504509
+        }
+      },
+      "Amsterdam": {
+        "registerTrade": {
+          "n": 5,
+          "mean": 1030754,
+          "min": 1030754,
+          "max": 1030754
+        },
+        "deposit": {
+          "n": 5,
+          "mean": 52432,
+          "min": 52432,
+          "max": 52432
+        },
+        "confirmKey/DO": {
+          "n": 5,
+          "mean": 137590,
+          "min": 137590,
+          "max": 137590
+        },
+        "confirmKey/DB": {
+          "n": 5,
+          "mean": 151694,
+          "min": 151694,
+          "max": 151694
+        },
+        "settle": {
+          "n": 5,
+          "mean": 279449.8,
+          "min": 279405,
+          "max": 279467
+        },
+        "withdraw": {
+          "n": 5,
+          "mean": 40636,
+          "min": 40636,
+          "max": 40636
+        },
+        "normal_total": {
+          "n": 5,
+          "mean": 1651919.8,
+          "min": 1651875,
+          "max": 1651937
+        }
+      }
+    },
+    "D2/1024": {
+      "Osaka": {
+        "registerTrade": {
+          "n": 5,
+          "mean": 237874,
+          "min": 237874,
+          "max": 237874
+        },
+        "deposit": {
+          "n": 5,
+          "mean": 38032,
+          "min": 38032,
+          "max": 38032
+        },
+        "confirmKey/DO": {
+          "n": 5,
+          "mean": 60376,
+          "min": 60376,
+          "max": 60376
+        },
+        "confirmKey/DB": {
+          "n": 5,
+          "mean": 65900,
+          "min": 65900,
+          "max": 65900
+        },
+        "settle": {
+          "n": 5,
+          "mean": 114882.8,
+          "min": 114828,
+          "max": 114912
+        },
+        "withdraw": {
+          "n": 5,
+          "mean": 45756,
+          "min": 45756,
+          "max": 45756
+        },
+        "normal_total": {
+          "n": 5,
+          "mean": 517064.8,
+          "min": 517010,
+          "max": 517094
+        }
+      },
+      "Amsterdam": {
+        "registerTrade": {
+          "n": 5,
+          "mean": 1030754,
+          "min": 1030754,
+          "max": 1030754
+        },
+        "deposit": {
+          "n": 5,
+          "mean": 52432,
+          "min": 52432,
+          "max": 52432
+        },
+        "confirmKey/DO": {
+          "n": 5,
+          "mean": 137590,
+          "min": 137590,
+          "max": 137590
+        },
+        "confirmKey/DB": {
+          "n": 5,
+          "mean": 151694,
+          "min": 151694,
+          "max": 151694
+        },
+        "settle": {
+          "n": 5,
+          "mean": 292022.8,
+          "min": 291968,
+          "max": 292052
+        },
+        "withdraw": {
+          "n": 5,
+          "mean": 40636,
+          "min": 40636,
+          "max": 40636
+        },
+        "normal_total": {
+          "n": 5,
+          "mean": 1664492.8,
+          "min": 1664438,
+          "max": 1664522
+        }
+      }
+    },
+    "D2/4096": {
+      "Osaka": {
+        "registerTrade": {
+          "n": 5,
+          "mean": 237874,
+          "min": 237874,
+          "max": 237874
+        },
+        "deposit": {
+          "n": 5,
+          "mean": 38032,
+          "min": 38032,
+          "max": 38032
+        },
+        "confirmKey/DO": {
+          "n": 5,
+          "mean": 60376,
+          "min": 60376,
+          "max": 60376
+        },
+        "confirmKey/DB": {
+          "n": 5,
+          "mean": 65900,
+          "min": 65900,
+          "max": 65900
+        },
+        "settle": {
+          "n": 5,
+          "mean": 192522,
+          "min": 192270,
+          "max": 192840
+        },
+        "withdraw": {
+          "n": 5,
+          "mean": 45756,
+          "min": 45756,
+          "max": 45756
+        },
+        "normal_total": {
+          "n": 5,
+          "mean": 594704,
+          "min": 594452,
+          "max": 595022
+        }
+      },
+      "Amsterdam": {
+        "registerTrade": {
+          "n": 5,
+          "mean": 1030754,
+          "min": 1030754,
+          "max": 1030754
+        },
+        "deposit": {
+          "n": 5,
+          "mean": 52432,
+          "min": 52432,
+          "max": 52432
+        },
+        "confirmKey/DO": {
+          "n": 5,
+          "mean": 137590,
+          "min": 137590,
+          "max": 137590
+        },
+        "confirmKey/DB": {
+          "n": 5,
+          "mean": 151694,
+          "min": 151694,
+          "max": 151694
+        },
+        "settle": {
+          "n": 5,
+          "mean": 367428.6,
+          "min": 367341,
+          "max": 367571
+        },
+        "withdraw": {
+          "n": 5,
+          "mean": 40636,
+          "min": 40636,
+          "max": 40636
+        },
+        "normal_total": {
+          "n": 5,
+          "mean": 1739898.6,
+          "min": 1739811,
+          "max": 1740041
+        }
+      }
+    },
+    "D2/16384": {
+      "Osaka": {
+        "registerTrade": {
+          "n": 5,
+          "mean": 237874,
+          "min": 237874,
+          "max": 237874
+        },
+        "deposit": {
+          "n": 5,
+          "mean": 38032,
+          "min": 38032,
+          "max": 38032
+        },
+        "confirmKey/DO": {
+          "n": 5,
+          "mean": 60376,
+          "min": 60376,
+          "max": 60376
+        },
+        "confirmKey/DB": {
+          "n": 5,
+          "mean": 65900,
+          "min": 65900,
+          "max": 65900
+        },
+        "settle": {
+          "n": 5,
+          "mean": 682632,
+          "min": 682290,
+          "max": 682980
+        },
+        "withdraw": {
+          "n": 5,
+          "mean": 45756,
+          "min": 45756,
+          "max": 45756
+        },
+        "normal_total": {
+          "n": 5,
+          "mean": 1084814,
+          "min": 1084472,
+          "max": 1085162
+        }
+      },
+      "Amsterdam": {
+        "registerTrade": {
+          "n": 5,
+          "mean": 1030754,
+          "min": 1030754,
+          "max": 1030754
+        },
+        "deposit": {
+          "n": 5,
+          "mean": 52432,
+          "min": 52432,
+          "max": 52432
+        },
+        "confirmKey/DO": {
+          "n": 5,
+          "mean": 137590,
+          "min": 137590,
+          "max": 137590
+        },
+        "confirmKey/DB": {
+          "n": 5,
+          "mean": 151694,
+          "min": 151694,
+          "max": 151694
+        },
+        "settle": {
+          "n": 5,
+          "mean": 1086360,
+          "min": 1086360,
+          "max": 1086360
+        },
+        "withdraw": {
+          "n": 5,
+          "mean": 40636,
+          "min": 40636,
+          "max": 40636
+        },
+        "normal_total": {
+          "n": 5,
+          "mean": 2458830,
+          "min": 2458830,
+          "max": 2458830
+        }
+      }
+    },
+    "D2/65536": {
+      "Osaka": {
+        "registerTrade": {
+          "n": 5,
+          "mean": 237874,
+          "min": 237874,
+          "max": 237874
+        },
+        "deposit": {
+          "n": 5,
+          "mean": 38032,
+          "min": 38032,
+          "max": 38032
+        },
+        "confirmKey/DO": {
+          "n": 5,
+          "mean": 60376,
+          "min": 60376,
+          "max": 60376
+        },
+        "confirmKey/DB": {
+          "n": 5,
+          "mean": 65900,
+          "min": 65900,
+          "max": 65900
+        },
+        "settle": {
+          "n": 5,
+          "mean": 2643210,
+          "min": 2642490,
+          "max": 2643810
+        },
+        "withdraw": {
+          "n": 5,
+          "mean": 45756,
+          "min": 45756,
+          "max": 45756
+        },
+        "normal_total": {
+          "n": 5,
+          "mean": 3045392,
+          "min": 3044672,
+          "max": 3045992
+        }
+      },
+      "Amsterdam": {
+        "registerTrade": {
+          "n": 5,
+          "mean": 1030754,
+          "min": 1030754,
+          "max": 1030754
+        },
+        "deposit": {
+          "n": 5,
+          "mean": 52432,
+          "min": 52432,
+          "max": 52432
+        },
+        "confirmKey/DO": {
+          "n": 5,
+          "mean": 137590,
+          "min": 137590,
+          "max": 137590
+        },
+        "confirmKey/DB": {
+          "n": 5,
+          "mean": 151694,
+          "min": 151694,
+          "max": 151694
+        },
+        "settle": {
+          "n": 5,
+          "mean": 4232088,
+          "min": 4232088,
+          "max": 4232088
+        },
+        "withdraw": {
+          "n": 5,
+          "mean": 40636,
+          "min": 40636,
+          "max": 40636
+        },
+        "normal_total": {
+          "n": 5,
+          "mean": 5604558,
+          "min": 5604558,
+          "max": 5604558
+        }
+      }
+    },
+    "refund": {
+      "Osaka": {
+        "registerTrade": {
+          "n": 3,
+          "mean": 237862,
+          "min": 237862,
+          "max": 237862
+        },
+        "deposit": {
+          "n": 3,
+          "mean": 38032,
+          "min": 38032,
+          "max": 38032
+        },
+        "confirmKey/DO": {
+          "n": 3,
+          "mean": 60376,
+          "min": 60376,
+          "max": 60376
+        },
+        "confirmKey/DB": {
+          "n": 3,
+          "mean": 65900,
+          "min": 65900,
+          "max": 65900
+        },
+        "timeoutRefund": {
+          "n": 3,
+          "mean": 51312,
+          "min": 51312,
+          "max": 51312
+        }
+      },
+      "Amsterdam": {
+        "registerTrade": {
+          "n": 3,
+          "mean": 1030742,
+          "min": 1030742,
+          "max": 1030742
+        },
+        "deposit": {
+          "n": 3,
+          "mean": 52432,
+          "min": 52432,
+          "max": 52432
+        },
+        "confirmKey/DO": {
+          "n": 3,
+          "mean": 137590,
+          "min": 137590,
+          "max": 137590
+        },
+        "confirmKey/DB": {
+          "n": 3,
+          "mean": 151694,
+          "min": 151694,
+          "max": 151694
+        },
+        "timeoutRefund": {
+          "n": 3,
+          "mean": 47740,
+          "min": 47740,
+          "max": 47740
+        }
+      }
+    }
+  },
+  "settlement_floor_groups": {
+    "D1/T1": {
+      "gas": {
+        "n": 5,
+        "mean": 93842.2,
+        "min": 93819,
+        "max": 93857
+      },
+      "floor_gas": {
+        "n": 5,
+        "mean": 36012,
+        "min": 36000,
+        "max": 36030
+      },
+      "floor_binding_samples": 0
+    },
+    "D1/T2": {
+      "gas": {
+        "n": 5,
+        "mean": 90581,
+        "min": 90581,
+        "max": 90581
+      },
+      "floor_gas": {
+        "n": 5,
+        "mean": 30580,
+        "min": 30580,
+        "max": 30580
+      },
+      "floor_binding_samples": 0
+    },
+    "D2/128": {
+      "gas": {
+        "n": 5,
+        "mean": 92885.4,
+        "min": 92853,
+        "max": 92903
+      },
+      "floor_gas": {
+        "n": 5,
+        "mean": 34324,
+        "min": 34300,
+        "max": 34330
+      },
+      "floor_binding_samples": 0
+    },
+    "D2/512": {
+      "gas": {
+        "n": 5,
+        "mean": 102309.8,
+        "min": 102265,
+        "max": 102327
+      },
+      "floor_gas": {
+        "n": 5,
+        "mean": 49636,
+        "min": 49600,
+        "max": 49660
+      },
+      "floor_binding_samples": 0
+    },
+    "D2/1024": {
+      "gas": {
+        "n": 5,
+        "mean": 114882.8,
+        "min": 114828,
+        "max": 114912
+      },
+      "floor_gas": {
+        "n": 5,
+        "mean": 70086,
+        "min": 69930,
+        "max": 70140
+      },
+      "floor_binding_samples": 0
+    },
+    "D2/4096": {
+      "gas": {
+        "n": 5,
+        "mean": 192522,
+        "min": 192270,
+        "max": 192840
+      },
+      "floor_gas": {
+        "n": 5,
+        "mean": 192522,
+        "min": 192270,
+        "max": 192840
+      },
+      "floor_binding_samples": 5
+    },
+    "D2/16384": {
+      "gas": {
+        "n": 5,
+        "mean": 682632,
+        "min": 682290,
+        "max": 682980
+      },
+      "floor_gas": {
+        "n": 5,
+        "mean": 682632,
+        "min": 682290,
+        "max": 682980
+      },
+      "floor_binding_samples": 5
+    },
+    "D2/65536": {
+      "gas": {
+        "n": 5,
+        "mean": 2643210,
+        "min": 2642490,
+        "max": 2643810
+      },
+      "floor_gas": {
+        "n": 5,
+        "mean": 2643210,
+        "min": 2642490,
+        "max": 2643810
+      },
+      "floor_binding_samples": 5
+    }
+  },
+  "settlement_byte_audit": [
+    {
+      "group": "D1/T1",
+      "repeat": 1,
+      "tid": 2,
+      "calldata_bytes": 516,
+      "zero_bytes": 188,
+      "nonzero_bytes": 328,
+      "intrinsic_calldata_gas": 6000,
+      "data_floor_gas": 36000,
+      "signature_v": 28,
+      "tx_hash": "0x6ec8445865cbae9cb094af64c45bda8083588b1e327d27774c6b59e50ca61ae6",
+      "gas": 93845,
+      "floor_binding": false,
+      "Amsterdam_counterfactual_gas": 270985,
+      "Amsterdam_counterfactual_floor": 48024
+    },
+    {
+      "group": "D1/T1",
+      "repeat": 2,
+      "tid": 3,
+      "calldata_bytes": 516,
+      "zero_bytes": 187,
+      "nonzero_bytes": 329,
+      "intrinsic_calldata_gas": 6012,
+      "data_floor_gas": 36030,
+      "signature_v": 28,
+      "tx_hash": "0xbcac3721a62ec7f21ffef1e7450d06bc57376df186d10d3c8538ceee71dc8c6d",
+      "gas": 93857,
+      "floor_binding": false,
+      "Amsterdam_counterfactual_gas": 270997,
+      "Amsterdam_counterfactual_floor": 48024
+    },
+    {
+      "group": "D1/T1",
+      "repeat": 3,
+      "tid": 4,
+      "calldata_bytes": 516,
+      "zero_bytes": 187,
+      "nonzero_bytes": 329,
+      "intrinsic_calldata_gas": 6012,
+      "data_floor_gas": 36030,
+      "signature_v": 27,
+      "tx_hash": "0xaf8cda2950dac73a11de266b42964be3afaacfe531d90f79a974cbc94c030b27",
+      "gas": 93819,
+      "floor_binding": false,
+      "Amsterdam_counterfactual_gas": 270959,
+      "Amsterdam_counterfactual_floor": 48024
+    },
+    {
+      "group": "D1/T1",
+      "repeat": 4,
+      "tid": 5,
+      "calldata_bytes": 516,
+      "zero_bytes": 188,
+      "nonzero_bytes": 328,
+      "intrinsic_calldata_gas": 6000,
+      "data_floor_gas": 36000,
+      "signature_v": 28,
+      "tx_hash": "0x80dd11e8899d82150b2bade5ba28910c018552d76669b1f3b2ae919fb7240e45",
+      "gas": 93845,
+      "floor_binding": false,
+      "Amsterdam_counterfactual_gas": 270985,
+      "Amsterdam_counterfactual_floor": 48024
+    },
+    {
+      "group": "D1/T1",
+      "repeat": 5,
+      "tid": 6,
+      "calldata_bytes": 516,
+      "zero_bytes": 188,
+      "nonzero_bytes": 328,
+      "intrinsic_calldata_gas": 6000,
+      "data_floor_gas": 36000,
+      "signature_v": 28,
+      "tx_hash": "0x5f176804bc1ed7564f274eeb4dfb23d8ceda64f166cf2994a48b2da1ad751599",
+      "gas": 93845,
+      "floor_binding": false,
+      "Amsterdam_counterfactual_gas": 270985,
+      "Amsterdam_counterfactual_floor": 48024
+    },
+    {
+      "group": "D1/T2",
+      "repeat": 1,
+      "tid": 7,
+      "calldata_bytes": 388,
+      "zero_bytes": 198,
+      "nonzero_bytes": 190,
+      "intrinsic_calldata_gas": 3832,
+      "data_floor_gas": 30580,
+      "signature_v": 28,
+      "tx_hash": "0x83f654299cb4fd84e9eeef472d24d61dd752f7a0f31a61fff00d30f4f343d66f",
+      "gas": 90581,
+      "floor_binding": false,
+      "Amsterdam_counterfactual_gas": 267721,
+      "Amsterdam_counterfactual_floor": 39832
+    },
+    {
+      "group": "D1/T2",
+      "repeat": 2,
+      "tid": 8,
+      "calldata_bytes": 388,
+      "zero_bytes": 198,
+      "nonzero_bytes": 190,
+      "intrinsic_calldata_gas": 3832,
+      "data_floor_gas": 30580,
+      "signature_v": 28,
+      "tx_hash": "0x04f9929911d2e8c2fbf39c2f26fa4fe4f6420878a4f1f527ac290a32645a2981",
+      "gas": 90581,
+      "floor_binding": false,
+      "Amsterdam_counterfactual_gas": 267721,
+      "Amsterdam_counterfactual_floor": 39832
+    },
+    {
+      "group": "D1/T2",
+      "repeat": 3,
+      "tid": 9,
+      "calldata_bytes": 388,
+      "zero_bytes": 198,
+      "nonzero_bytes": 190,
+      "intrinsic_calldata_gas": 3832,
+      "data_floor_gas": 30580,
+      "signature_v": 28,
+      "tx_hash": "0xc620aa10865b36ac660eeb144b47c94427c1a2c2770195657f5d7399112526b1",
+      "gas": 90581,
+      "floor_binding": false,
+      "Amsterdam_counterfactual_gas": 267721,
+      "Amsterdam_counterfactual_floor": 39832
+    },
+    {
+      "group": "D1/T2",
+      "repeat": 4,
+      "tid": 10,
+      "calldata_bytes": 388,
+      "zero_bytes": 198,
+      "nonzero_bytes": 190,
+      "intrinsic_calldata_gas": 3832,
+      "data_floor_gas": 30580,
+      "signature_v": 28,
+      "tx_hash": "0x31b2ed70813e87252b91946b0cfa7acc80ae3df5386687ebaad56511191ab466",
+      "gas": 90581,
+      "floor_binding": false,
+      "Amsterdam_counterfactual_gas": 267721,
+      "Amsterdam_counterfactual_floor": 39832
+    },
+    {
+      "group": "D1/T2",
+      "repeat": 5,
+      "tid": 11,
+      "calldata_bytes": 388,
+      "zero_bytes": 198,
+      "nonzero_bytes": 190,
+      "intrinsic_calldata_gas": 3832,
+      "data_floor_gas": 30580,
+      "signature_v": 28,
+      "tx_hash": "0xe2ac565df7e60aaecb36b1ac29403a92a8ae4a8eecc51c0dfe8a73262cd5a385",
+      "gas": 90581,
+      "floor_binding": false,
+      "Amsterdam_counterfactual_gas": 267721,
+      "Amsterdam_counterfactual_floor": 39832
+    },
+    {
+      "group": "D2/128",
+      "repeat": 1,
+      "tid": 12,
+      "calldata_bytes": 484,
+      "zero_bytes": 202,
+      "nonzero_bytes": 282,
+      "intrinsic_calldata_gas": 5320,
+      "data_floor_gas": 34300,
+      "signature_v": 27,
+      "tx_hash": "0x954000369d982c7f672696aa185dd12aab3a6ac0f909c4fd5247f8fd9570d784",
+      "gas": 92853,
+      "floor_binding": false,
+      "Amsterdam_counterfactual_gas": 269993,
+      "Amsterdam_counterfactual_floor": 45976
+    },
+    {
+      "group": "D2/128",
+      "repeat": 2,
+      "tid": 13,
+      "calldata_bytes": 484,
+      "zero_bytes": 201,
+      "nonzero_bytes": 283,
+      "intrinsic_calldata_gas": 5332,
+      "data_floor_gas": 34330,
+      "signature_v": 28,
+      "tx_hash": "0xf4a9516511700a5fa1398acf2a2fbe1ed5fb94a2e5992b80a8f73decd84b59dd",
+      "gas": 92903,
+      "floor_binding": false,
+      "Amsterdam_counterfactual_gas": 270043,
+      "Amsterdam_counterfactual_floor": 45976
+    },
+    {
+      "group": "D2/128",
+      "repeat": 3,
+      "tid": 14,
+      "calldata_bytes": 484,
+      "zero_bytes": 201,
+      "nonzero_bytes": 283,
+      "intrinsic_calldata_gas": 5332,
+      "data_floor_gas": 34330,
+      "signature_v": 28,
+      "tx_hash": "0x76c8e5a7216117928c0d6fd187632e50550dfe83f798f8bf9a385fcc20b216ff",
+      "gas": 92903,
+      "floor_binding": false,
+      "Amsterdam_counterfactual_gas": 270043,
+      "Amsterdam_counterfactual_floor": 45976
+    },
+    {
+      "group": "D2/128",
+      "repeat": 4,
+      "tid": 15,
+      "calldata_bytes": 484,
+      "zero_bytes": 201,
+      "nonzero_bytes": 283,
+      "intrinsic_calldata_gas": 5332,
+      "data_floor_gas": 34330,
+      "signature_v": 27,
+      "tx_hash": "0x59eeb97551c524e069588f0b1c0ad97212788fe6831d8c6193f2c497488afd6b",
+      "gas": 92865,
+      "floor_binding": false,
+      "Amsterdam_counterfactual_gas": 270005,
+      "Amsterdam_counterfactual_floor": 45976
+    },
+    {
+      "group": "D2/128",
+      "repeat": 5,
+      "tid": 16,
+      "calldata_bytes": 484,
+      "zero_bytes": 201,
+      "nonzero_bytes": 283,
+      "intrinsic_calldata_gas": 5332,
+      "data_floor_gas": 34330,
+      "signature_v": 28,
+      "tx_hash": "0xf0b2438b26ba1640f44e00a9555464de6707ef5b9d4ce98f3cd6fa4f090b49ac",
+      "gas": 92903,
+      "floor_binding": false,
+      "Amsterdam_counterfactual_gas": 270043,
+      "Amsterdam_counterfactual_floor": 45976
+    },
+    {
+      "group": "D2/512",
+      "repeat": 1,
+      "tid": 17,
+      "calldata_bytes": 868,
+      "zero_bytes": 202,
+      "nonzero_bytes": 666,
+      "intrinsic_calldata_gas": 11464,
+      "data_floor_gas": 49660,
+      "signature_v": 28,
+      "tx_hash": "0x1b9faab87b5717e3f3d3f270c22300922fb52e06c352c41fb98b96ce7d96fee3",
+      "gas": 102327,
+      "floor_binding": false,
+      "Amsterdam_counterfactual_gas": 279467,
+      "Amsterdam_counterfactual_floor": 70552
+    },
+    {
+      "group": "D2/512",
+      "repeat": 2,
+      "tid": 18,
+      "calldata_bytes": 868,
+      "zero_bytes": 204,
+      "nonzero_bytes": 664,
+      "intrinsic_calldata_gas": 11440,
+      "data_floor_gas": 49600,
+      "signature_v": 28,
+      "tx_hash": "0x09fa8c3d0f71a0b030a4ee8c74b629117f6102931d2dc985a7e98b31029a21a4",
+      "gas": 102303,
+      "floor_binding": false,
+      "Amsterdam_counterfactual_gas": 279443,
+      "Amsterdam_counterfactual_floor": 70552
+    },
+    {
+      "group": "D2/512",
+      "repeat": 3,
+      "tid": 19,
+      "calldata_bytes": 868,
+      "zero_bytes": 204,
+      "nonzero_bytes": 664,
+      "intrinsic_calldata_gas": 11440,
+      "data_floor_gas": 49600,
+      "signature_v": 27,
+      "tx_hash": "0xf7a1294cba9bf1202205828e0cb06cd5a0a65abcd82e06c758fc394e4fc68186",
+      "gas": 102265,
+      "floor_binding": false,
+      "Amsterdam_counterfactual_gas": 279405,
+      "Amsterdam_counterfactual_floor": 70552
+    },
+    {
+      "group": "D2/512",
+      "repeat": 4,
+      "tid": 20,
+      "calldata_bytes": 868,
+      "zero_bytes": 202,
+      "nonzero_bytes": 666,
+      "intrinsic_calldata_gas": 11464,
+      "data_floor_gas": 49660,
+      "signature_v": 28,
+      "tx_hash": "0xbbbf504fa0ec22453651384a0acfa7c15aa19fe59466eaa1daddcaabf3fc5bf3",
+      "gas": 102327,
+      "floor_binding": false,
+      "Amsterdam_counterfactual_gas": 279467,
+      "Amsterdam_counterfactual_floor": 70552
+    },
+    {
+      "group": "D2/512",
+      "repeat": 5,
+      "tid": 21,
+      "calldata_bytes": 868,
+      "zero_bytes": 202,
+      "nonzero_bytes": 666,
+      "intrinsic_calldata_gas": 11464,
+      "data_floor_gas": 49660,
+      "signature_v": 28,
+      "tx_hash": "0x2cff2217fc48b0d7924cdc2eefd0cb42fb2267d4cee65b9583878b814c4b44a9",
+      "gas": 102327,
+      "floor_binding": false,
+      "Amsterdam_counterfactual_gas": 279467,
+      "Amsterdam_counterfactual_floor": 70552
+    },
+    {
+      "group": "D2/1024",
+      "repeat": 1,
+      "tid": 22,
+      "calldata_bytes": 1380,
+      "zero_bytes": 202,
+      "nonzero_bytes": 1178,
+      "intrinsic_calldata_gas": 19656,
+      "data_floor_gas": 70140,
+      "signature_v": 28,
+      "tx_hash": "0xc89cc61902211e427ae22d5f07fe2fbacc1919c270450924f1f58389d693f523",
+      "gas": 114912,
+      "floor_binding": false,
+      "Amsterdam_counterfactual_gas": 292052,
+      "Amsterdam_counterfactual_floor": 103320
+    },
+    {
+      "group": "D2/1024",
+      "repeat": 2,
+      "tid": 23,
+      "calldata_bytes": 1380,
+      "zero_bytes": 202,
+      "nonzero_bytes": 1178,
+      "intrinsic_calldata_gas": 19656,
+      "data_floor_gas": 70140,
+      "signature_v": 28,
+      "tx_hash": "0x014c4d70789f8220ced1d4f93c598adb2d99304e97e7ba560d66f4b6d2cf0f5e",
+      "gas": 114912,
+      "floor_binding": false,
+      "Amsterdam_counterfactual_gas": 292052,
+      "Amsterdam_counterfactual_floor": 103320
+    },
+    {
+      "group": "D2/1024",
+      "repeat": 3,
+      "tid": 24,
+      "calldata_bytes": 1380,
+      "zero_bytes": 202,
+      "nonzero_bytes": 1178,
+      "intrinsic_calldata_gas": 19656,
+      "data_floor_gas": 70140,
+      "signature_v": 27,
+      "tx_hash": "0x80adc88451f891d6404820f1224c9bcf836291247d30e39e6b3843bb9f99b8c6",
+      "gas": 114874,
+      "floor_binding": false,
+      "Amsterdam_counterfactual_gas": 292014,
+      "Amsterdam_counterfactual_floor": 103320
+    },
+    {
+      "group": "D2/1024",
+      "repeat": 4,
+      "tid": 25,
+      "calldata_bytes": 1380,
+      "zero_bytes": 209,
+      "nonzero_bytes": 1171,
+      "intrinsic_calldata_gas": 19572,
+      "data_floor_gas": 69930,
+      "signature_v": 28,
+      "tx_hash": "0xac5cb3793d3864d54368fa4638649bf7f3b0d6190ada1be44cae0664c9989014",
+      "gas": 114828,
+      "floor_binding": false,
+      "Amsterdam_counterfactual_gas": 291968,
+      "Amsterdam_counterfactual_floor": 103320
+    },
+    {
+      "group": "D2/1024",
+      "repeat": 5,
+      "tid": 26,
+      "calldata_bytes": 1380,
+      "zero_bytes": 204,
+      "nonzero_bytes": 1176,
+      "intrinsic_calldata_gas": 19632,
+      "data_floor_gas": 70080,
+      "signature_v": 28,
+      "tx_hash": "0x6f1d8060917dbcefb45e274962b32b48d41d04fe791ee6a30b65afeb80c8c1ec",
+      "gas": 114888,
+      "floor_binding": false,
+      "Amsterdam_counterfactual_gas": 292028,
+      "Amsterdam_counterfactual_floor": 103320
+    },
+    {
+      "group": "D2/4096",
+      "repeat": 1,
+      "tid": 27,
+      "calldata_bytes": 4452,
+      "zero_bytes": 224,
+      "nonzero_bytes": 4228,
+      "intrinsic_calldata_gas": 68544,
+      "data_floor_gas": 192360,
+      "signature_v": 27,
+      "tx_hash": "0x5a022fef414281f10c389ad431ebfe3f314116399b344da46f7702bc47e44e80",
+      "gas": 192360,
+      "floor_binding": true,
+      "Amsterdam_counterfactual_gas": 367341,
+      "Amsterdam_counterfactual_floor": 299928
+    },
+    {
+      "group": "D2/4096",
+      "repeat": 2,
+      "tid": 28,
+      "calldata_bytes": 4452,
+      "zero_bytes": 208,
+      "nonzero_bytes": 4244,
+      "intrinsic_calldata_gas": 68736,
+      "data_floor_gas": 192840,
+      "signature_v": 28,
+      "tx_hash": "0x27c0209751337a2bbf202ae18bd97033cc8e2c6e89a9f91d15802b0c3c353ecf",
+      "gas": 192840,
+      "floor_binding": true,
+      "Amsterdam_counterfactual_gas": 367571,
+      "Amsterdam_counterfactual_floor": 299928
+    },
+    {
+      "group": "D2/4096",
+      "repeat": 3,
+      "tid": 29,
+      "calldata_bytes": 4452,
+      "zero_bytes": 227,
+      "nonzero_bytes": 4225,
+      "intrinsic_calldata_gas": 68508,
+      "data_floor_gas": 192270,
+      "signature_v": 28,
+      "tx_hash": "0x8fc594ea554512e1696608cf2a2d40da204fed5dd6b044c716858ede29669972",
+      "gas": 192270,
+      "floor_binding": true,
+      "Amsterdam_counterfactual_gas": 367343,
+      "Amsterdam_counterfactual_floor": 299928
+    },
+    {
+      "group": "D2/4096",
+      "repeat": 4,
+      "tid": 30,
+      "calldata_bytes": 4452,
+      "zero_bytes": 220,
+      "nonzero_bytes": 4232,
+      "intrinsic_calldata_gas": 68592,
+      "data_floor_gas": 192480,
+      "signature_v": 28,
+      "tx_hash": "0xacbacf925a6993d2db0f73d68fe587d51e7028792d9b5bf9e4581cae8b38085d",
+      "gas": 192480,
+      "floor_binding": true,
+      "Amsterdam_counterfactual_gas": 367427,
+      "Amsterdam_counterfactual_floor": 299928
+    },
+    {
+      "group": "D2/4096",
+      "repeat": 5,
+      "tid": 31,
+      "calldata_bytes": 4452,
+      "zero_bytes": 214,
+      "nonzero_bytes": 4238,
+      "intrinsic_calldata_gas": 68664,
+      "data_floor_gas": 192660,
+      "signature_v": 27,
+      "tx_hash": "0x3c864e27265bc73f9b0afe43ff3e5a82bd8725c36706cf4b59d3e4f37d3aaa94",
+      "gas": 192660,
+      "floor_binding": true,
+      "Amsterdam_counterfactual_gas": 367461,
+      "Amsterdam_counterfactual_floor": 299928
+    },
+    {
+      "group": "D2/16384",
+      "repeat": 1,
+      "tid": 32,
+      "calldata_bytes": 16740,
+      "zero_bytes": 254,
+      "nonzero_bytes": 16486,
+      "intrinsic_calldata_gas": 264792,
+      "data_floor_gas": 682980,
+      "signature_v": 28,
+      "tx_hash": "0xa41284388c33e8d1970faf217890b377e1fd4405c11ab18dec138e896e242bcb",
+      "gas": 682980,
+      "floor_binding": true,
+      "Amsterdam_counterfactual_gas": 1086360,
+      "Amsterdam_counterfactual_floor": 1086360
+    },
+    {
+      "group": "D2/16384",
+      "repeat": 2,
+      "tid": 33,
+      "calldata_bytes": 16740,
+      "zero_bytes": 265,
+      "nonzero_bytes": 16475,
+      "intrinsic_calldata_gas": 264660,
+      "data_floor_gas": 682650,
+      "signature_v": 27,
+      "tx_hash": "0x54c9f7977e686bc5d813124f93519f8bbd4b8c589bea9f8c8339cdd2dd4f88e7",
+      "gas": 682650,
+      "floor_binding": true,
+      "Amsterdam_counterfactual_gas": 1086360,
+      "Amsterdam_counterfactual_floor": 1086360
+    },
+    {
+      "group": "D2/16384",
+      "repeat": 3,
+      "tid": 34,
+      "calldata_bytes": 16740,
+      "zero_bytes": 277,
+      "nonzero_bytes": 16463,
+      "intrinsic_calldata_gas": 264516,
+      "data_floor_gas": 682290,
+      "signature_v": 27,
+      "tx_hash": "0x9cfc315b512b5d1a1f2e7ec334110eee3847b168b97d7bfa082f49328283b2b6",
+      "gas": 682290,
+      "floor_binding": true,
+      "Amsterdam_counterfactual_gas": 1086360,
+      "Amsterdam_counterfactual_floor": 1086360
+    },
+    {
+      "group": "D2/16384",
+      "repeat": 4,
+      "tid": 35,
+      "calldata_bytes": 16740,
+      "zero_bytes": 268,
+      "nonzero_bytes": 16472,
+      "intrinsic_calldata_gas": 264624,
+      "data_floor_gas": 682560,
+      "signature_v": 27,
+      "tx_hash": "0x20449c1dab549c41f8844dc8481d974f5cf1ce249830aca84c38abf94d0db495",
+      "gas": 682560,
+      "floor_binding": true,
+      "Amsterdam_counterfactual_gas": 1086360,
+      "Amsterdam_counterfactual_floor": 1086360
+    },
+    {
+      "group": "D2/16384",
+      "repeat": 5,
+      "tid": 36,
+      "calldata_bytes": 16740,
+      "zero_bytes": 264,
+      "nonzero_bytes": 16476,
+      "intrinsic_calldata_gas": 264672,
+      "data_floor_gas": 682680,
+      "signature_v": 28,
+      "tx_hash": "0xda4cf56ce210ba790ea1ce094d587019f30bb4c2e9c4fe5ae8fb7ccddfa3fcd3",
+      "gas": 682680,
+      "floor_binding": true,
+      "Amsterdam_counterfactual_gas": 1086360,
+      "Amsterdam_counterfactual_floor": 1086360
+    },
+    {
+      "group": "D2/65536",
+      "repeat": 1,
+      "tid": 37,
+      "calldata_bytes": 65892,
+      "zero_bytes": 473,
+      "nonzero_bytes": 65419,
+      "intrinsic_calldata_gas": 1048596,
+      "data_floor_gas": 2642490,
+      "signature_v": 28,
+      "tx_hash": "0xf3dbca377c6f5505b3d97fbad8a231cc4f790cf7d179ae44f9bcefe1dd50df80",
+      "gas": 2642490,
+      "floor_binding": true,
+      "Amsterdam_counterfactual_gas": 4232088,
+      "Amsterdam_counterfactual_floor": 4232088
+    },
+    {
+      "group": "D2/65536",
+      "repeat": 2,
+      "tid": 38,
+      "calldata_bytes": 65892,
+      "zero_bytes": 429,
+      "nonzero_bytes": 65463,
+      "intrinsic_calldata_gas": 1049124,
+      "data_floor_gas": 2643810,
+      "signature_v": 27,
+      "tx_hash": "0x0fd1fc07ba2fb18774d994c0423f3bb80b097e8de929ce1c95eea2682aaff274",
+      "gas": 2643810,
+      "floor_binding": true,
+      "Amsterdam_counterfactual_gas": 4232088,
+      "Amsterdam_counterfactual_floor": 4232088
+    },
+    {
+      "group": "D2/65536",
+      "repeat": 3,
+      "tid": 39,
+      "calldata_bytes": 65892,
+      "zero_bytes": 429,
+      "nonzero_bytes": 65463,
+      "intrinsic_calldata_gas": 1049124,
+      "data_floor_gas": 2643810,
+      "signature_v": 27,
+      "tx_hash": "0x507e9e05143b469fcd4f581d37da89e65f3bdc0c04567fac1a45dc6e62398709",
+      "gas": 2643810,
+      "floor_binding": true,
+      "Amsterdam_counterfactual_gas": 4232088,
+      "Amsterdam_counterfactual_floor": 4232088
+    },
+    {
+      "group": "D2/65536",
+      "repeat": 4,
+      "tid": 40,
+      "calldata_bytes": 65892,
+      "zero_bytes": 462,
+      "nonzero_bytes": 65430,
+      "intrinsic_calldata_gas": 1048728,
+      "data_floor_gas": 2642820,
+      "signature_v": 28,
+      "tx_hash": "0xe09413e017ac7de7735abcc65b19d8a2cb001c6a33ace1f2ab1e4ab1984e91e3",
+      "gas": 2642820,
+      "floor_binding": true,
+      "Amsterdam_counterfactual_gas": 4232088,
+      "Amsterdam_counterfactual_floor": 4232088
+    },
+    {
+      "group": "D2/65536",
+      "repeat": 5,
+      "tid": 41,
+      "calldata_bytes": 65892,
+      "zero_bytes": 452,
+      "nonzero_bytes": 65440,
+      "intrinsic_calldata_gas": 1048848,
+      "data_floor_gas": 2643120,
+      "signature_v": 27,
+      "tx_hash": "0x44e182656076a80a33f86c33468917c7bcfc8bfd6799e8af16b33d5bac5ddfa5",
+      "gas": 2643120,
+      "floor_binding": true,
+      "Amsterdam_counterfactual_gas": 4232088,
+      "Amsterdam_counterfactual_floor": 4232088
+    }
+  ],
+  "limitations": [
+    "This is a local Gas benchmark, not Sepolia timing or consensus-finality measurement.",
+    "Ten certifications form one continuous state trajectory, not ten independent trajectories.",
+    "Trade samples are contract microbenchmarks using independently verified task outputs and test receipt keys; no new SGX execution.",
+    "Two RPC connections reach the same local node; independent EVM validation is provided separately by Geth.",
+    "Refund Gas is measured after advancing local chain time beyond the deadline, not by measuring real-network waiting.",
+    "Prior Sepolia and pilot observations are preserved separately and excluded from formal means."
+  ]
+}

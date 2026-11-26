@@ -1,0 +1,9 @@
+{
+  "exe": "attester",
+  "key": "signing-key.pem",
+  "debug": false,
+  "heapSize": 256,
+  "executableHeap": false,
+  "productID": 1,
+  "securityVersion": 1
+}
